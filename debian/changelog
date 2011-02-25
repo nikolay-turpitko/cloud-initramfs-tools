@@ -1,0 +1,5 @@
+cloud-initramfs-tools (0.1ubuntu1) natty; urgency=low
+
+  * Initial Release (LP: #725127).
+
+ -- Scott Moser <smoser@ubuntu.com>  Fri, 25 Feb 2011 12:44:03 -0500

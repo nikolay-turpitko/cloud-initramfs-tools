@@ -1,0 +1,73 @@
+#!/bin/sh
+
+RESCUE_LABEL="RESCUE_VOL"
+UMOUNT=""
+
+hasvol() {
+	local dev="" mp="" myinit="${init}"
+	dev="/dev/disk/by-label/${1}"
+	[ -e "${dev}" ] || return 1
+
+	mount -o ro "${dev}" "${MP}" && UMOUNT="${MP}" ||
+		{ echo "${dev} existed, but mount failed"; return 1; }
+
+	mp=${MP}
+	# the presense of file /etc/rescuevol-ignore in the target indicates
+	# that we should not use it.
+	[ -e "${mp}/etc/rescuevol-ignore" ] && return 1;
+
+	# if /sbin/rescuevol-init exists, then use it rather than /sbin/init
+	[ -e "${mp}/sbin/rescuevol-init" ] && myinit="/sbin/rescuevol-init"
+
+	_RET_DEV=${dev}
+	_RET_INIT=${myinit}
+
+}
+mountfail() {
+	local vol="/dev/disk/by-label/${RESCUE_VOL}"
+	if [ "${ROOT}" = "${vol}" ]; then
+		echo "**** Failed to mount rescue volume ${vol} ! *****"
+	else
+		cat <<EOF
+****    Boot from your root device ${ROOT} failed!          *****
+**** You can Potentially rescue this instance by attaching  *****
+**** A volume labeled ${RESCUE_LABEL} and invoking a reboot *****
+**** If the initramfs sees such a volume, it will attempt   *****
+**** to boot off of it                                      *****
+EOF
+	fi
+	rm "${0}"
+	exit 1
+}
+cleanup() {
+	[ -z "${UMOUNT}" ] || umount "${UMOUNT}"
+	[ -z "${MP}" -o ! -d "${MP}" ] || rmdir "${MP}"
+}
+
+PREREQS=""
+case $1 in
+    prereqs) echo "${PREREQS}"; exit 0;;
+esac
+
+. /scripts/functions
+
+# basic setup
+MP=/tmp/rescue_mp
+mkdir -p "${MP}"
+trap cleanup EXIT
+
+[ "$1" = "mountfail" ] && { mountfail; exit; }
+
+add_mountroot_fail_hook
+
+hasvol "${RESCUE_LABEL}" || exit 0
+cat > /conf/param.conf <<EOF
+init=${_RET_INIT}
+ROOT=${_RET_DEV}
+EOF
+
+echo "====== Booting RESCUEVOL from ${_RET_DEV} init=${_RET_INIT} ======"
+
+exit 0
+
+# vi: ts=4 noexpandtab
