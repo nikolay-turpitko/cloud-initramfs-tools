@@ -1,4 +1,4 @@
-cloud-initramfs-tools (0.2ubuntu1) natty; urgency=low
+cloud-initramfs-tools (0.2ubuntu1) oneiric; urgency=low
 
   * invoke blkid to search for the rescue volume rather than relying on 
     /dev/disk/by-label/LABEL .  The by-label entries would sometimes
