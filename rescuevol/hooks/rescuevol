@@ -8,6 +8,6 @@ esac
 
 . /usr/share/initramfs-tools/hook-functions
 
-# nothing necessary here
+copy_exec /sbin/blkid /sbin
 
 # vi: ts=4 noexpandtab

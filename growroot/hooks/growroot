@@ -11,5 +11,6 @@ esac
 ##
 copy_exec /sbin/sfdisk /sbin
 copy_exec /usr/bin/growpart /sbin
+copy_exec /sbin/udevadm /sbin
 
 # vi: ts=4 noexpandtab

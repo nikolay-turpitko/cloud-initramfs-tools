@@ -3,3 +3,10 @@ cloud-initramfs-tools for Debian
 
 This package is maintained as a ubuntu native package, and revision
 controlled using bzr.
+
+The Upstream for this package is available at:
+  lp:~cloud-init-dev/ubuntu/<suite>/cloud-initramfs-tools/<suite>
+  https://code.launchpad.net/~awstools-dev/ubuntu/<suite>/cloud-intiramfs-tools/<suite>
+For example:
+  lp:~cloud-init-dev/ubuntu/natty/cloud-initramfs-tools/natty
+  https://code.launchpad.net/~cloud-init-dev/ubuntu/natty/cloud-intiramfs-tools/natty

@@ -39,4 +39,8 @@ from the instance, but the system is unusable.  This could occur if
 an error left ssh access broken or the system didn't come all the way up.
 
 The user could attach a correctly labeled volume, reboot the instance
-and access the system to fix it
+and access the system to fix it.
+
+If the volume contains a file '/etc/rescuevol-ignore' it will be ignored.
+This allows you to fix your instance, create that volume and *not* boot the
+rescue volume on next boot
