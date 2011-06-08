@@ -65,6 +65,10 @@ umount "${rootmnt}" ||
 sfdisk -R "${rootdisk}" ||
 	msg "failed to re-read partition for ${rootdisk}"
 
+# Wait for the partition re-read events to complete 
+# so that the root partition is available when we try and mount it.
+udevadm settle --timeout ${ROOTDELAY:-30}
+
 # this is taken from 'mountroot' function
 #   see /usr/share/initramfs-tools/scripts/local
 FSTYPE=$(wait-for-root "${ROOT}" ${ROOTDELAY:-30})
