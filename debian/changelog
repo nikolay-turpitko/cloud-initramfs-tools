@@ -1,4 +1,4 @@
-cloud-initramfs-tools (0.2ubuntu1) UNRELEASED; urgency=low
+cloud-initramfs-tools (0.2ubuntu1) natty; urgency=low
 
   * invoke blkid to search for the rescue volume rather than relying on 
     /dev/disk/by-label/LABEL .  The by-label entries would sometimes
@@ -10,7 +10,7 @@ cloud-initramfs-tools (0.2ubuntu1) UNRELEASED; urgency=low
   * fix race condition that resulted in intermittent mount failures 
     after 'growroot'. (LP: #765843)
 
- -- Scott Moser <smoser@ubuntu.com>  Wed, 08 Jun 2011 09:30:49 -0400
+ -- Scott Moser <smoser@ubuntu.com>  Wed, 08 Jun 2011 09:46:57 -0400
 
 cloud-initramfs-tools (0.1ubuntu1) natty; urgency=low
 
