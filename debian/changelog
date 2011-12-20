@@ -1,3 +1,10 @@
+cloud-initramfs-tools (0.3ubuntu1) UNRELEASED; urgency=low
+
+  * growroot: unmount root before attempting to grow the root
+    partition (LP: #906722).
+
+ -- Scott Moser <smoser@ubuntu.com>  Tue, 20 Dec 2011 12:58:06 -0500
+
 cloud-initramfs-tools (0.2ubuntu1) oneiric; urgency=low
 
   * invoke blkid to search for the rescue volume rather than relying on 

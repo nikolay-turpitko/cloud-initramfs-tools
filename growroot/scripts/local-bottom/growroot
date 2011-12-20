@@ -47,23 +47,34 @@ partnum=${rootdev#${rootdisk}}
 # (xen xvda1 is an example of such a funny named block device)
 [ -e "/sys/block/${rootdev##*/}" ] && exit 0
 
-# if growpart fails, exit. its failure messages should go
-# to stderr, so they'll get to the console
-out=$(growpart "${rootdisk}" "${partnum}" ) ||
+# if growpart fails, exit.
+# we capture stderr because on success of dry-run, it writes
+# to stderr what it would do.
+out=$(growpart --dry-run "${rootdisk}" "${partnum}" 2>&1) ||
 	{ msg "${out}"; exit 1; }
 
-# if growpart output starts with 'CHANGED:' then it did something.
+# if growpart would change something, --dry-run will write something like
+#  CHANGE: partition=1 start=2048 old: size=1024000 end=1026048 new: size=2089192,end=2091240
 # anything else, exit
 case "${out}" in
-	CHANGED:*) echo "GROWROOT: $out";;
+	CHANGE:*) :;;
 	*) exit 0;;
 esac
 
+# There was something to do, unmount and resize
 umount "${rootmnt}" ||
 	fail "failed to umount ${rootmnt}";
 
-sfdisk -R "${rootdisk}" ||
-	msg "failed to re-read partition for ${rootdisk}"
+if out=$(growpart "${rootdisk}" "${partnum}" 2>&1); then
+	case "$out" in
+		CHANGED:*) echo "GROWROOT: $out";;
+    	NOCHANGE:*)
+			echo "GROWROOT: WARNING: expected to grow partition, but did not";;
+		*) echo "GROWROOT: unexpected output: ${out}"
+	esac
+else
+	echo "GROWROOT: WARNING: resize failed: $out"
+fi
 
 # Wait for the partition re-read events to complete 
 # so that the root partition is available when we try and mount it.
