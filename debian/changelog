@@ -1,3 +1,10 @@
+cloud-initramfs-tools (0.4ubuntu1) precise; urgency=low
+
+  * growroot: run 'udevadm settle' before attempting growpart to
+    allow initial events to finish (LP: #937352)
+
+ -- Scott Moser <smoser@ubuntu.com>  Thu, 23 Feb 2012 22:19:20 -0500
+
 cloud-initramfs-tools (0.3ubuntu1) precise; urgency=low
 
   * growroot: unmount root before attempting to grow the root
