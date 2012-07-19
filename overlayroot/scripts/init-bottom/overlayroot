@@ -249,12 +249,12 @@ ${ROOT} ${ROOT_RO} ${ROOT_TYPE} ${ROOT_OPTIONS} 0 0
 EOF
 [ $? -eq 0 ] || log_fail "failed to modify /etc/fstab (step 1)"
 
-#remove root entry and swap from fstab
-cat ${rootmnt}${ROOT_RO}/etc/fstab | grep -v ' / ' | grep -v swap >>${rootmnt}/etc/fstab
-if [ $? -ne 0 ]; then
+#comment out root and swap entries passing others through unmodified
+awk '{ 
+	if ($0 ~ /^#/ || ($2 != "/" && $3 != "swap") ) { print $0 }
+	else { printf("%s%s\n","#overlayroot#",$0); }
+	}' "$rootmnt${ROOT_RO}/etc/fstab" >> "${rootmnt}/etc/fstab" ||
 	log_fail "failed to modify etc/fstab (step 2)"
-	#exit 0
-fi
 
 # now we are done. Additinal steps may be necessary depending on the actualy
 # distribution and/or its configuration. 
