@@ -1,5 +1,6 @@
 #!/bin/sh
 #  Copyright, 2012 Dustin Kirkland <kirkland@ubuntu.com>
+#  Copyright, 2012 Scott Moser <smoser@ubuntu.com>
 #  Copyright, 2012 Axel Heider
 #
 #  Based on scripts from
@@ -7,6 +8,7 @@
 #    Nicholas A. Schembri State College PA USA
 #    Axel Heider
 #    Dustin Kirkland
+#    Scott Moser
 #
 #
 #  This program is free software: you can redistribute it and/or modify
@@ -30,10 +32,15 @@ esac
 
 . /scripts/functions
 
-. /conf/conf.d/overlayroot
-
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
 MYTAG="overlayroot"
-DISABLE_MAGIC_FILE="/disable-overlayroot"
+# generic settings 
+# ${ROOT} and ${rootmnt} are predefined by caller of this script. Note that
+# the root fs ${rootmnt} it mounted readonly on the initrams, which fits
+# nicely for our purposes.
+root_rw=/media/root-rw
+root_ro=/media/root-ro
+ROOTMNT=${rootmnt} # use global name to indicate created outside this
 
 log_fail() { log_failure_msg "${MYTAG}: $*"; }
 log_success() { log_success_msg "${MYTAG}: $*"; }
@@ -51,200 +58,271 @@ send_input() {
 	rm -f $tmpfile
 	return $ret
 }
+parse_string() {
+  # parse a key/value string like:
+  # name=mapper,pass=foo,fstype=ext4,mkfs=1
+  # set variables under namespace 'ns'.
+  #  _RET_name=mapper
+  #  _RET_pass=foo
+  #  _RET_fstype=ext4
+  # set _RET to the list of variables found
+  local input="${1}" delim="${2:-,}" ns="${3:-_RET_}"
+  local oifs="$IFS" tok="" keys="" key="" val=""
+
+  set -f; IFS="$delim"; set -- $input; IFS="$oifs"; set +f;
+  _RET=""
+  for tok in "$@"; do
+    key="${tok%%=*}"
+    val="${tok#${key}}"
+    val=${val#=}
+    eval "${ns}${key}"='${val}' || return 1
+    keys="${keys} ${ns}${key}"
+  done
+  _RET=${keys# }
+  return
+}
+get_varval() { eval _RET='${'$1'}'; }
+get_kernel_cmdline() {
+	local cmdline="" val=""
+	read cmdline < /proc/cmdline || return 1
+	set -f
+	for tok in $cmdline; do
+		case "$tok" in
+			overlayroot=) val="disabled";;
+			overlayroot=*) val="${tok#overlayroot=}";;
+			overlayroot*)
+				log_warn "strange kernel param 'overlayroot' without '='";;
+		esac
+	done
+	_RET="$val"
+}
+cryptsetup() {
+	local fstype="ext3" pass="" mapname="secure" mkfs="1" dev=""
+	# this does necessary crypto setup and sets _RET
+	# to the appropriate block device (ie /dev/mapper/secure)
+
+	# mkfs (default is 1):
+	#  0: never create filesystem
+	#  1: if pass is given and mount fails, create a new one
+	#     if no pass given, create new
+	#  2: if pass is given and mount fails, fail
+	#     if no pass given, create new
+	local options="$1" opened=0
+	parse_string "${overlayroot#crypt:}" ||
+		{ log_fail "failed parsing '${options}'"; return 1; }
+
+	fstype=${_RET_fstype:-${fstype}}
+	pass=${_RET_pass:-${pass}}
+	mapname=${_RET_mapname:-${mapname}}
+	mkfs=${_RET_mkfs:-${mkfs}}
+	dev=${_RET_dev:-${dev}}
+
+	dev="/dev/${dev#/dev/}"
+	[ -n "$dev" ] ||
+		{ log_fail "dev is required input for crypt setup"; return 1; }
+	[ -b "$dev" ] ||
+		{ log_fail "crypt dev device $dev does not exist"; return 1; }
 
 
-# parse kernel boot command line 
-OVERLAYROOT_DRIVER=
-DISABLE_OVERLAYROOT=
-for CMD_PARAM in $(cat /proc/cmdline); do 
-	case ${CMD_PARAM} in 
-		disable-overlayroot)
-			DISABLE_OVERLAYROOT=1
-			;;
-		overlayroot-driver=*)
-			OVERLAYROOT_DRIVER=${CMD_PARAM#overlay-driver=}
-			;;
-	esac
+	if [ -n "$pass" ]; then
+		send_input "$pass" \
+			cryptsetup luksOpen "$dev" "$mapname" --key-file -
+		if [ $# -eq 0 ]; then
+			log_warn "reusing existing luks device at $dev"
+			_RET="/dev/mapper/$mapname"
+			return 0
+		fi
+		if [ "$mkfs" != "1" ]; then
+			log_fail "luksOpen failed on $dev with mkfs=$mkfs";
+			return 1;
+		fi
+		log_warn "re-opening $dev failed with mkfs=$mkfs will create new"
+	else
+ 		pass=$(pwgen 80) ||
+			{ log_fail "failed generation of password"; return 1; }
+	fi
+
+	log_warn "setting up new luks device at $dev"
+	# clear backing device
+	wipefs -a "$dev" ||
+		{ log_fail "failed to wipe $dev"; return 1; }
+	send_input "$pass" cryptsetup luksFormat "$dev" --key-file - ||
+		{ log_fail "luksFormat $dev failed"; return 1; }
+	send_input "$pass" \
+		cryptsetup luksOpen "$dev" "$mapname" --key-file - ||
+		{ log_fail "luksOpen $dev failed"; return 1; }
+	mke2fs -t "${fstype}" "/dev/mapper/${mapname}" || {
+		log_fail "failed to mkfs -t $fstype on map $mapname";
+		return 1;
+	}
+
+	_RET="/dev/mapper/$mapname"
+	return 0
+}
+
+
+# collect kernel parameter value into a config file
+kern_cfg="/tmp/${0##*/}.kernel-cmdline.cfg"
+get_kernel_cmdline || fail "failed to read kernel command line!"
+[ -n "$_RET" ] && echo "overlayroot=${_RET}" > "$kern_cfg"
+
+overlayroot=""
+prev=""
+prev_cfg=""
+# each of these config locations gets an opportunity to override
+# previous declaration.
+for cfg in /conf/conf.d/overlayroot "${ROOTMNT}/etc/overlayroot.conf" \
+	"$kern_cfg"; do
+	[ -f "$cfg" ] || continue
+	. "$cfg"
+	[ -n "$prev" -a "$overlayroot" != "$prev" ] &&
+		log_warn "$cfg overwrote value from $prev_cfg with '$overlayroot'"
 done
 
-# check if overlayroot fs is disabled
-if [ ! -z "${DISABLE_OVERLAYROOT}" ]; then
-	log_warn "disabled, found boot parameter disable-overlayroot"
-	exit 0
-fi
-if [ -e "${rootmnt}${DISABLE_MAGIC_FILE}" ]; then
-	log_warn "disabled, found file ${rootmnt}${DISABLE_MAGIC_FILE}"
-	exit 0
-fi
-if [ -z "${OVERLAYROOT_BACKING_DEVICE}" ]; then
-	log_warn "disabled, undefined OVERLAYROOT_BACKING_DEVICE"
-	exit 0
-elif [ ! -b "${OVERLAYROOT_BACKING_DEVICE}" ] && [ "${OVERLAYROOT_BACKING_DEVICE}" != "tmpfs" ]; then
-	log_warn "invalid value for OVERLAYROOT_BACKING_DEVICE=${OVERLAYROOT_BACKING_DEVICE}"
-	exit 0
-fi
+case "${overlayroot:-disabled}" in
+	tmpfs) mode="tmpfs";;
+	/dev/*)
+		mode="device"
+		device="$overlayroot"
+		[ -b "$device" ] ||
+			fail "overlay root device '$device' does not exist"
+		;;
+	crypt|crypt:*)
+		mode="crypt"
+		t=${overlayroot#crypt}
+		crypt_setup "${t#:}" ||
+			fail "failed setup crypt for ${overlayroot}"
+		device="$_RET"
+		;;
+	disabled)
+		log_warn "overlayroot disabled"
+		exit 0;;
+	*)
+		fail "invalid value for overlayroot: $overlayroot";
+		exit 0;;
+esac
 
-# generic settings 
-# ${ROOT} and ${rootmnt} are predefined by caller of this script. Note that
-# the root fs ${rootmnt} it mounted readonly on the initrams, which fits nicely
-# for our purposes.
-ROOT_RW=/media/root-rw
-ROOT_RO=/media/root-ro
+# overlayroot_driver *could* be defined in one of the configs above
+# but we're not documenting that.
+overlayroot_driver=${overlayroot_driver:-overlayfs}
 
-# check if ${OVERLAYROOT_DRIVER} is defined, otherwise set default 
-if [ -z "${OVERLAYROOT_DRIVER}" ]; then
-	OVERLAYROOT_DRIVER=overlayfs
-fi
-# settings based in ${OVERLAYROOT_DRIVER}, stop here if unsupported. 
-case ${OVERLAYROOT_DRIVER} in
+# settings based on overlayroot_driver
+case "${overlayroot_driver}" in
 	overlayfs)
-		MOUNT_PARMS="-t overlayfs -o lowerdir=${ROOT_RO},upperdir=${ROOT_RW} overlayfs-root ${rootmnt}"
+		mount_type="overlayfs"
+		mount_opts="-o lowerdir=${root_ro},upperdir=${root_rw}"
+		mount_opts="${mount_opts} overlayfs-root ${ROOTMNT}"
 		;;
 	aufs)
-		MOUNT_PARMS="-t aufs -o dirs=${ROOT_RW}:${ROOT_RO}=ro aufs-root ${rootmnt}"
+		mount_type="aufs"
+		mount_opts="-o dirs=${root_rw}:${root_ro}=ro aufs-root ${ROOTMNT}"
 		;;
 	*)
-		panic "${MYTAG} ERROR: invalide OVERLAYROOT_DRIVER ${OVERLAYROOT_DRIVER}"
+		log_fail "invalid overlayroot driver: ${overlayroot_driver}"
+		panic "$MYTAG"
 		;;
 esac
 
-
 # check if kernel module exists 
-modprobe -qb ${OVERLAYROOT_DRIVER} ||
-	fail "missing kernel module ${OVERLAYROOT_DRIVER}"
+modprobe -qb "${overlayroot_driver}" ||
+	fail "missing kernel module ${overlayroot_driver}"
 
-# make the mount point on the init root fs ${ROOT_RW}
-[ -d ${ROOT_RW} ] || mkdir -p ${ROOT_RW} ||
-	fail "failed to create ${ROOT_RW}"
+# make the mount point on the init root fs ${root_rw}
+mkdir -p "${root_rw}" ||
+	fail "failed to create ${root_rw}"
 
-# make the mount point on the init root fs ${ROOT_RO}
-[ -d ${ROOT_RO} ] || mkdir -p ${ROOT_RO} ||
-	fail "failed to create ${ROOT_RO}"
+# make the mount point on the init root fs ${root_ro}
+mkdir -p "${root_ro}" ||
+	fail "failed to create ${root_ro}"
 
-if [ -b "${OVERLAYROOT_BACKING_DEVICE}" ]; then
-	# use a backing device for overlay writes
-	case "${OVERLAYROOT_ENCRYPTED}" in
-		y|Y|yes|YES|true|TRUE|1)
-			[ -n "${OVERLAYROOT_BACKING_FILESYSTEM}" ] || OVERLAYROOT_BACKING_FILESYSTEM="ext4"
-			[ -n "${OVERLAYROOT_MAPNAME}" ] || OVERLAYROOT_MAPNAME="secure"
-			if [ -n "${OVERLAYROOT_PASSWORD}" ]; then
-				# password specified
-				key=${OVERLAYROOT_PASSWORD}
-				send_input "$key" \
-					cryptsetup luksOpen ${OVERLAYROOT_BACKING_DEVICE} \
-						${OVERLAYROOT_MAPNAME} --key-file - ||
-					fail "failed to open luks device"
-			else
-				# no password, generate randomly
-				key=$(/bin/pwgen 80)
-				# clear backing device
-				wipefs -a ${OVERLAYROOT_BACKING_DEVICE}
-				# luks format backing device
-				send_input "$key" \
-					cryptsetup luksFormat ${OVERLAYROOT_BACKING_DEVICE} \
-						--key-file - ||
-					fail "failed to format luks device"
-				# luks open backing device
-				send_input "${key}" \
-					cryptsetup luksOpen ${OVERLAYROOT_BACKING_DEVICE} \
-						${OVERLAYROOT_MAPNAME} --key-file - ||
-					fail "failed to open luks device"
-
-				# format devmapped backing device
-				mke2fs -t ${OVERLAYROOT_BACKING_FILESYSTEM} /dev/mapper/${OVERLAYROOT_MAPNAME}
-				if [ $? -ne 0 ]; then
-					fail "failed to format filesystem"
-				fi
-			fi
-			# mount the devmapped backing device
-			mount /dev/mapper/${OVERLAYROOT_MAPNAME} ${ROOT_RW} ||
-				fail "failed to mount backing device"
-		;;
-		*)
-			# mount the backing device
-			mount "${OVERLAYROOT_BACKING_DEVICE}" ${ROOT_RW} ||
-				fail "failed to mount backing device"
-		;;
-	esac
-else
-	# mount a tempfs using the device name tmpfs-root at ${ROOT_RW}
-	mount -t tmpfs tmpfs-root ${ROOT_RW} ||
+# mount the backing devie to $root_rw
+if [ "$mode" = "tmpfs" ]; then
+	# mount a tempfs using the device name tmpfs-root
+	mount -t tmpfs tmpfs-root "${root_rw}" ||
 		fail "failed to create tmpfs"
+else
+	# dev or crypto
+	mount "$device" "${root_rw}" ||
+		fail "failed mount backing device $device"
 fi
 
-# root is mounted on ${rootmnt}, move it to ${ROOT_RO}.
-mount --move ${rootmnt} ${ROOT_RO} ||
-	fail "failed to move root away from ${rootmnt} to ${ROOT_RO}"
+# root is mounted on ${ROOTMNT}, move it to ${ROOT_RO}.
+mount --move "${ROOTMNT}" "${root_ro}" ||
+	fail "failed to move root away from ${ROOTMNT} to ${root_ro}"
 
-# there is nothing left at ${rootmnt} now. So for any error we get we should
-# either do recovery to restore ${rootmnt} for drop to a initramfs shell using
+# there is nothing left at ${ROOTMNT} now. So for any error we get we should
+# either do recovery to restore ${ROOTMNT} for drop to a initramfs shell using
 # "panic". Otherwise the boot process is very likely to fail with even more 
 # errors and leave the system in a wired state. 
 
-# mount virtual fs ${rootmnt} with rw-fs ${ROOT_RW} on top or ro-fs ${ROOT_RO}.
-mount ${MOUNT_PARMS}
+# mount virtual fs ${ROOTMNT} with rw-fs ${root_rw} on top or ro-fs ${root_ro}.
+mount -t "$mount_type" $mount_opts
 if [ $? -ne 0 ]; then
-	log_fail "failed to create new ro/rw layerd ${rootmnt}"
-	# do recovery and try resoring the mount for ${rootmnt}
-	mount --move ${ROOT_RO} ${rootmnt}
+	log_fail "failed to create new ro/rw layerd ${ROOTMNT}"
+	# do recovery and try resoring the mount for ${ROOTMNT}
+	mount --move ${root_ro} ${ROOTMNT}
 	if [ $? -ne 0 ]; then
-	   # thats badm, drpo to s shell to let the user try fixing this
-	   panic "${MYTAG} RECOVERY ERROR: failed to move ${ROOT_RO} back to ${rootmnt}"
+		# thats bad, drop to shell to let the user try fixing this
+		log_fail "RECOVERY_ERROR: failed to move $root_ro back to ${ROOTMNT}"
+		panic "$MYTAG"
 	fi
 	exit 0
 fi
 
-# now the real root fs is on ${ROOT_RO} of the init file system, our layered
-# root fs is set up at ${rootmnt}. So we can write anywhere in {rootmnt} and the
-# changes will end up in ${ROOT_RW} while ${ROOT_RO} it not touched. However 
-# ${ROOT_RO} and ${ROOT_RW} are on the initramfs root fs, which will be removed
-# an replaced by ${rootmnt}. Thus we must move ${ROOT_RO} and ${ROOT_RW} to the
-# rootfs visible later, ie. ${rootmnt}${ROOT_RO} and ${rootmnt}${ROOT_RO}.
-# Since the layered ro/rw is already up, these changes also end up on 
-# ${ROOT_RW} while ${ROOT_RO} is not touched.
+# now the real root fs is on ${root_ro} of the init file system, our
+# layered root fs is set up at ${ROOTMNT}. So we can write anywhere in
+# {ROOTMNT} and the changes will end up in ${root_rw} while ${root_ro} it
+# not touched. However ${root_ro} and ${root_rw} are on the initramfs root
+# fs, which will be removed an replaced by ${ROOTMNT}. Thus we must move
+# ${root_ro} and ${root_rw} to the rootfs visible later, ie.
+# ${ROOTMNT}${root_ro} and ${ROOTMNT}${root_ro}.  Since the layered ro/rw
+# is already up, these changes also end up on ${root_rw} while ${root_ro}
+# is not touched.
 
-# move mount from ${ROOT_RO} to ${rootmnt}${ROOT_RO} 
-[ -d ${rootmnt}${ROOT_RO} ] || mkdir -p ${rootmnt}${ROOT_RO}
-mount --move ${ROOT_RO} ${rootmnt}${ROOT_RO} ||
-	fail "failed to move ${ROOT_RO} to ${rootmnt}${ROOT_RO}"
+# move mount from ${root_ro} to ${ROOTMNT}${root_ro} 
+mkdir -p "${ROOTMNT}/${root_ro}"
+mount --move ${root_ro} "${ROOTMNT}${root_ro}" ||
+	fail "failed to move ${root_ro} to ${ROOTMNT}${root_ro}"
 
-# move mount from ${ROOT_RW} to ${rootmnt}${ROOT_RW} 
-[ -d ${rootmnt}${ROOT_RW} ] || mkdir -p ${rootmnt}${ROOT_RW}
-mount --move ${ROOT_RW} ${rootmnt}${ROOT_RW} ||
-	fail "failed to move ${ROOT_RW} to ${rootmnt}${ROOT_RW}"
+# move mount from ${root_rw} to ${ROOTMNT}${root_rw} 
+[ -d ${ROOTMNT}${root_rw} ] || mkdir -p ${ROOTMNT}${root_rw}
+mount --move "${root_rw}" "${ROOTMNT}${root_rw}" ||
+	fail "failed to move ${root_rw} to ${ROOTMNT}${root_rw}"
 
-# technically, everything is set up nicely now. Since ${rootmnt} had beend 
-# mounted read-only on the initfamfs already, ${rootmnt}${ROOT_RO} is it, too.
-# Now we init process could run - but unfortunately, we may have to prepare 
-# some more things here. 
-# Basically, there are two ways to deal with the read-only root fs. If the 
-# system is made aware of this, things can be simplified a lot.
-# If it is not, things need to be done to our best knowledge. 
+# technically, everything is set up nicely now. Since ${ROOTMNT} had beend
+# mounted read-only on the initfamfs already, ${ROOTMNT}${root_ro} is it,
+# too.  Now we init process could run - but unfortunately, we may have to
+# prepare some more things here. 
+# Basically, there are two ways to deal with the read-only root fs. If the
+# system is made aware of this, things can be simplified a lot.  If it is
+# not, things need to be done to our best knowledge. 
 #
-# So we assume here, the system does not really know about our read-only root fs.
+# So we assume here, the system does not really know about our read-only
+# root fs.
 #
-# Let's deal with /etc/fstab first. It usually contains an entry for the root 
-# fs, which is no longer valid now. We have to remove it and add our new 
-# ${ROOT_RO} entry. 
-# Remember we are still on the initramfs root fs here, so we have to work on
-# ${rootmnt}/etc/fstab. The original fstab is ${rootmnt}${ROOT_RO}/etc/fstab.
-ROOT_TYPE=$(cat /proc/mounts | grep ${ROOT} | cut -d' ' -f3)
-ROOT_OPTIONS=$(cat /proc/mounts | grep ${ROOT} | cut -d' ' -f4)
-cat <<EOF >${rootmnt}/etc/fstab
+# Let's deal with /etc/fstab first. It usually contains an entry for the
+# root fs, which is no longer valid now. We have to remove it and add our
+# new ${root_ro} entry. 
+# Remember we are still on the initramfs root fs here, so we have to work
+# on ${ROOTMNT}/etc/fstab. The original fstab is
+# ${ROOTMNT}${root_ro}/etc/fstab.
+root_type=$(awk '$1 == root { print $3 }' "root=$ROOT" /proc/mounts)
+root_options=$(awk '$1 == root { print $4 }' "root=$ROOT" /proc/mounts)
+cat <<EOF >${ROOTMNT}/etc/fstab
 #
-#  This fstab is in RAM, the real one can be found at ${ROOT_RO}/etc/fstab
+#  This fstab is in RAM, the real one can be found at ${root_ro}/etc/fstab
 #  The original entry for '/' and all swap files have been removed.  The new 
 #  entry for the read-only the real root fs follows. Write access can be 
 #  enabled using:
-#	sudo mount -o remount,rw ${ROOT_RO}
+#	sudo mount -o remount,rw ${root_ro}
 #  re-mounting it read-only is done using:
-#	sudo mount -o remount,ro ${ROOT_RO}
+#	sudo mount -o remount,ro ${root_ro}
 #
 
-${ROOT} ${ROOT_RO} ${ROOT_TYPE} ${ROOT_OPTIONS} 0 0
+${ROOT} ${root_ro} ${root_type} ${root_options} 0 0
 
 #
-#  remaining entries from the original ${ROOT_RO}/etc/fstab follow.
+#  remaining entries from the original ${root_ro}/etc/fstab follow.
 #
 EOF
 [ $? -eq 0 ] || log_fail "failed to modify /etc/fstab (step 1)"
@@ -253,14 +331,10 @@ EOF
 awk '{ 
 	if ($0 ~ /^#/ || ($2 != "/" && $3 != "swap") ) { print $0 }
 	else { printf("%s%s\n","#overlayroot#",$0); }
-	}' "$rootmnt${ROOT_RO}/etc/fstab" >> "${rootmnt}/etc/fstab" ||
+	}' "${ROOTMNT}${root_ro}/etc/fstab" >> "${ROOTMNT}/etc/fstab" ||
 	log_fail "failed to modify etc/fstab (step 2)"
 
-# now we are done. Additinal steps may be necessary depending on the actualy
-# distribution and/or its configuration. 
-
-log_success "sucessfully set up layered root fs using ${OVERLAYROOT_DRIVER}"
+log_success "sucessfully set ${overlayroot_driver} mount backed by $mode"
 
 exit 0 
-
 # vi: ts=4 noexpandtab
