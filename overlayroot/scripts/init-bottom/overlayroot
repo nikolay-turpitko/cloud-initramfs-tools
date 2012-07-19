@@ -42,6 +42,15 @@ fail() {
 	[ $# -eq 0 ] || log_fail "$@";
 	exit 0; # why do we exit success?
 }
+send_input() {
+	local tmpfile="/tmp/${0##*/}.$$"
+    printf "%s" "$1" > "$tmpfile" &&
+		shift && "$@" < "$tmpfile" &&
+		rm -f "$tmpfile" && return 0
+	local ret=$?
+	rm -f $tmpfile
+	return $ret
+}
 
 
 # parse kernel boot command line 
@@ -121,27 +130,28 @@ if [ -b "${OVERLAYROOT_BACKING_DEVICE}" ]; then
 			if [ -n "${OVERLAYROOT_PASSWORD}" ]; then
 				# password specified
 				key=${OVERLAYROOT_PASSWORD}
-				printf "%s" "${key}" | /sbin/cryptsetup luksOpen ${OVERLAYROOT_BACKING_DEVICE} ${OVERLAYROOT_MAPNAME} --key-file -
-				if [ $? -ne 0 ]; then
+				send_input "$key" \
+					cryptsetup luksOpen ${OVERLAYROOT_BACKING_DEVICE} \
+						${OVERLAYROOT_MAPNAME} --key-file - ||
 					fail "failed to open luks device"
-				fi
 			else
 				# no password, generate randomly
 				key=$(/bin/pwgen 80)
 				# clear backing device
-				/sbin/wipefs -a ${OVERLAYROOT_BACKING_DEVICE}
+				wipefs -a ${OVERLAYROOT_BACKING_DEVICE}
 				# luks format backing device
-				printf "%s" "${key}" | /sbin/cryptsetup luksFormat ${OVERLAYROOT_BACKING_DEVICE} --key-file -
-				if [ $? -ne 0 ]; then
+				send_input "$key" \
+					cryptsetup luksFormat ${OVERLAYROOT_BACKING_DEVICE} \
+						--key-file - ||
 					fail "failed to format luks device"
-				fi
 				# luks open backing device
-				printf "%s" "${key}" | /sbin/cryptsetup luksOpen ${OVERLAYROOT_BACKING_DEVICE} ${OVERLAYROOT_MAPNAME} --key-file -
-				if [ $? -ne 0 ]; then
+				send_input "${key}" \
+					cryptsetup luksOpen ${OVERLAYROOT_BACKING_DEVICE} \
+						${OVERLAYROOT_MAPNAME} --key-file - ||
 					fail "failed to open luks device"
-				fi
+
 				# format devmapped backing device
-				/sbin/mke2fs -t ${OVERLAYROOT_BACKING_FILESYSTEM} /dev/mapper/${OVERLAYROOT_MAPNAME}
+				mke2fs -t ${OVERLAYROOT_BACKING_FILESYSTEM} /dev/mapper/${OVERLAYROOT_MAPNAME}
 				if [ $? -ne 0 ]; then
 					fail "failed to format filesystem"
 				fi
