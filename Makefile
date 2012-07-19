@@ -1,4 +1,4 @@
-MODULES = growroot rescuevol
+MODULES = growroot rescuevol overlayroot
 INITRAMFS_D = /usr/share/initramfs-tools
 IRD = $(DESTDIR)/$(INITRAMFS_D)
 ULIB_PRE = $(DESTDIR)/usr/lib/cloud-initramfs-
@@ -6,7 +6,7 @@ ULIB_PRE = $(DESTDIR)/usr/lib/cloud-initramfs-
 build:
 
 install:
-	mkdir -p "$(IRD)/hooks" "$(IRD)/scripts"
+	mkdir -p "$(IRD)/hooks" "$(IRD)/scripts" "$(IRD)/conf.d"
 	set -e; for d in $(MODULES); do \
 		[ -d "$$d/hooks" ] || continue ; \
 		install "$$d/hooks"/* "$(IRD)/hooks" ; \
@@ -18,6 +18,10 @@ install:
 			mkdir -p "$$td" ; \
 			install "$$sd"/* "$$td"; \
 		done; done
+	set -e; for d in $(MODULES); do \
+		[ -d "$$d/conf.d" ] || continue ; \
+		install "$$d/conf.d"/* "$(IRD)/conf.d" ; \
+		done
 	set -e; for d in $(MODULES); do \
 		[ -d "$$d/tools" ] || continue ; \
 		mkdir -p "$(ULIB_PRE)$$d/" && \

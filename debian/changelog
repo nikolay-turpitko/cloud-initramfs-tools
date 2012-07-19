@@ -1,3 +1,12 @@
+cloud-initramfs-tools (0.5ubuntu1~ppa3) quantal; urgency=low
+
+  * Add support for an overlayroot binary package
+    - adds overlayfs support on top of a read only root
+    - with an optional backing device
+    - that can optionally be encrypted
+
+ -- Dustin Kirkland <kirkland@ubuntu.com>  Wed, 18 Jul 2012 14:04:11 -0500
+
 cloud-initramfs-tools (0.4ubuntu1) precise; urgency=low
 
   * growroot: run 'udevadm settle' before attempting growpart to

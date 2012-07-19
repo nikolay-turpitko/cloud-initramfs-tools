@@ -1,0 +1,288 @@
+#!/bin/sh
+#  Copyright, 2012 Dustin Kirkland <kirkland@ubuntu.com>
+#  Copyright, 2012 Axel Heider
+#
+#  Based on scripts from
+#    Sebastian P.
+#    Nicholas A. Schembri State College PA USA
+#    Axel Heider
+#    Dustin Kirkland
+#
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see
+#    <http://www.gnu.org/licenses/>.
+
+# no pre requirement
+PREREQ=""
+
+prereqs()
+{
+    echo "${PREREQ}"
+}
+
+case "$1" in
+    prereqs)
+    prereqs
+    exit 0
+    ;;
+esac
+
+. /scripts/functions
+. /conf/conf.d/overlayroot
+
+MYTAG="overlayroot"
+DISABLE_MAGIC_FILE="/disable-overlayroot"
+
+# parse kernel boot command line 
+OVERLAYROOT_DRIVER=
+DISABLE_OVERLAYROOT=
+for CMD_PARAM in $(cat /proc/cmdline); do 
+    case ${CMD_PARAM} in 
+        disable-overlayroot)
+            DISABLE_OVERLAYROOT=1
+            ;;
+        overlayroot-driver=*)
+            OVERLAYROOT_DRIVER=${CMD_PARAM#overlay-driver=}
+            ;;
+    esac
+done
+
+# check if overlayroot fs is disabled
+if [ ! -z "${DISABLE_OVERLAYROOT}" ]; then
+    log_warning_msg "${MYTAG}: disabled, found boot parameter disable-overlayroot"
+    exit 0
+fi
+if [ -e "${rootmnt}${DISABLE_MAGIC_FILE}" ]; then
+    log_warning_msg "${MYTAG}: disabled, found file ${rootmnt}${DISABLE_MAGIC_FILE}"
+    exit 0
+fi
+if [ -z "${OVERLAYROOT_BACKING_DEVICE}" ]; then
+    log_warning_msg "${MYTAG}: disabled, undefined OVERLAYROOT_BACKING_DEVICE"
+    exit 0
+elif [ ! -b "${OVERLAYROOT_BACKING_DEVICE}" ] && [ "${OVERLAYROOT_BACKING_DEVICE}" != "tmpfs" ]; then
+    log_warning_msg "${MYTAG}: invalid value for OVERLAYROOT_BACKING_DEVICE=${OVERLAYROOT_BACKING_DEVICE}"
+    exit 0
+fi
+
+# generic settings 
+# ${ROOT} and ${rootmnt} are predefined by caller of this script. Note that
+# the root fs ${rootmnt} it mounted readonly on the initrams, which fits nicely
+# for our purposes.
+ROOT_RW=/media/root-rw
+ROOT_RO=/media/root-ro
+
+# check if ${OVERLAYROOT_DRIVER} is defined, otherwise set default 
+if [ -z "${OVERLAYROOT_DRIVER}" ]; then
+    OVERLAYROOT_DRIVER=overlayfs
+fi
+# settings based in ${OVERLAYROOT_DRIVER}, stop here if unsupported. 
+case ${OVERLAYROOT_DRIVER} in
+    overlayfs)
+        MOUNT_PARMS="-t overlayfs -o lowerdir=${ROOT_RO},upperdir=${ROOT_RW} overlayfs-root ${rootmnt}"
+        ;;
+    aufs)
+        MOUNT_PARMS="-t aufs -o dirs=${ROOT_RW}:${ROOT_RO}=ro aufs-root ${rootmnt}"
+        ;;
+    *)
+        panic "${MYTAG} ERROR: invalide OVERLAYROOT_DRIVER ${OVERLAYROOT_DRIVER}"
+        ;;
+esac
+
+
+# check if kernel module exists 
+modprobe -qb ${OVERLAYROOT_DRIVER}
+if [ $? -ne 0 ]; then
+    log_failure_msg "${MYTAG} ERROR: missing kernel module ${OVERLAYROOT_DRIVER}"
+    exit 0
+fi
+
+# make the mount point on the init root fs ${ROOT_RW}
+[ -d ${ROOT_RW} ] || mkdir -p ${ROOT_RW}
+if [ $? -ne 0 ]; then
+    log_failure_msg "${MYTAG} ERROR: failed to create ${ROOT_RW}"
+    exit 0
+fi
+
+# make the mount point on the init root fs ${ROOT_RO}
+[ -d ${ROOT_RO} ] || mkdir -p ${ROOT_RO}
+if [ $? -ne 0 ]; then
+    log_failure_msg "${MYTAG} ERROR: failed to create ${ROOT_RO}"
+    exit 0
+fi
+
+if [ -b "${OVERLAYROOT_BACKING_DEVICE}" ]; then
+    # use a backing device for overlay writes
+    case "${OVERLAYROOT_ENCRYPTED}" in
+        y|Y|yes|YES|true|TRUE|1)
+            [ -n "${OVERLAYROOT_BACKING_FILESYSTEM}" ] || OVERLAYROOT_BACKING_FILESYSTEM="ext4"
+            [ -n "${OVERLAYROOT_MAPNAME}" ] || OVERLAYROOT_MAPNAME="secure"
+            if [ -n "${OVERLAYROOT_PASSWORD}" ]; then
+                # password specified
+                key=${OVERLAYROOT_PASSWORD}
+                printf "%s" "${key}" | /sbin/cryptsetup luksOpen ${OVERLAYROOT_BACKING_DEVICE} ${OVERLAYROOT_MAPNAME} --key-file -
+                if [ $? -ne 0 ]; then
+                    log_failure_msg "${MYTAG} ERROR: failed to open luks device"
+                    exit 0
+                fi
+            else
+                # no password, generate randomly
+                key=$(/bin/pwgen 80)
+                # clear backing device
+                /sbin/wipefs -a ${OVERLAYROOT_BACKING_DEVICE}
+                # luks format backing device
+                printf "%s" "${key}" | /sbin/cryptsetup luksFormat ${OVERLAYROOT_BACKING_DEVICE} --key-file -
+                if [ $? -ne 0 ]; then
+                    log_failure_msg "${MYTAG} ERROR: failed to format luks device"
+                    exit 0
+                fi
+                # luks open backing device
+                printf "%s" "${key}" | /sbin/cryptsetup luksOpen ${OVERLAYROOT_BACKING_DEVICE} ${OVERLAYROOT_MAPNAME} --key-file -
+                if [ $? -ne 0 ]; then
+                    log_failure_msg "${MYTAG} ERROR: failed to open luks device"
+                    exit 0
+                fi
+                # format devmapped backing device
+                /sbin/mke2fs -t ${OVERLAYROOT_BACKING_FILESYSTEM} /dev/mapper/${OVERLAYROOT_MAPNAME}
+                if [ $? -ne 0 ]; then
+                    log_failure_msg "${MYTAG} ERROR: failed to format filesystem"
+                    exit 0
+                fi
+            fi
+            # mount the devmapped backing device
+            mount /dev/mapper/${OVERLAYROOT_MAPNAME} ${ROOT_RW}
+            if [ $? -ne 0 ]; then
+                log_failure_msg "${MYTAG} ERROR: failed to mount backing device"
+                exit 0
+            fi
+        ;;
+        *)
+            # mount the backing device
+            mount "${OVERLAYROOT_BACKING_DEVICE}" ${ROOT_RW}
+            if [ $? -ne 0 ]; then
+                log_failure_msg "${MYTAG} ERROR: failed to mount backing device"
+                exit 0
+            fi
+        ;;
+    esac
+else
+    # mount a tempfs using the device name tmpfs-root at ${ROOT_RW}
+    mount -t tmpfs tmpfs-root ${ROOT_RW}
+    if [ $? -ne 0 ]; then
+        log_failure_msg "${MYTAG} ERROR: failed to create tmpfs"
+        exit 0
+    fi
+fi
+
+# root is mounted on ${rootmnt}, move it to ${ROOT_RO}.
+mount --move ${rootmnt} ${ROOT_RO}
+if [ $? -ne 0 ]; then
+    log_failure_msg "${MYTAG} ERROR: failed to move root away from ${rootmnt} to ${ROOT_RO}"
+    exit 0
+fi
+
+# there is nothing left at ${rootmnt} now. So for any error we get we should
+# either do recovery to restore ${rootmnt} for drop to a initramfs shell using
+# "panic". Otherwise the boot process is very likely to fail with even more 
+# errors and leave the system in a wired state. 
+
+# mount virtual fs ${rootmnt} with rw-fs ${ROOT_RW} on top or ro-fs ${ROOT_RO}.
+mount ${MOUNT_PARMS}
+if [ $? -ne 0 ]; then
+    log_failure_msg "${MYTAG} ERROR: failed to create new ro/rw layerd ${rootmnt}"
+    # do recovery and try resoring the mount for ${rootmnt}
+    mount --move ${ROOT_RO} ${rootmnt}
+    if [ $? -ne 0 ]; then
+       # thats badm, drpo to s shell to let the user try fixing this
+       panic "${MYTAG} RECOVERY ERROR: failed to move ${ROOT_RO} back to ${rootmnt}"
+    fi
+    exit 0
+fi
+
+# now the real root fs is on ${ROOT_RO} of the init file system, our layered
+# root fs is set up at ${rootmnt}. So we can write anywhere in {rootmnt} and the
+# changes will end up in ${ROOT_RW} while ${ROOT_RO} it not touched. However 
+# ${ROOT_RO} and ${ROOT_RW} are on the initramfs root fs, which will be removed
+# an replaced by ${rootmnt}. Thus we must move ${ROOT_RO} and ${ROOT_RW} to the
+# rootfs visible later, ie. ${rootmnt}${ROOT_RO} and ${rootmnt}${ROOT_RO}.
+# Since the layered ro/rw is already up, these changes also end up on 
+# ${ROOT_RW} while ${ROOT_RO} is not touched.
+
+# move mount from ${ROOT_RO} to ${rootmnt}${ROOT_RO} 
+[ -d ${rootmnt}${ROOT_RO} ] || mkdir -p ${rootmnt}${ROOT_RO}
+mount --move ${ROOT_RO} ${rootmnt}${ROOT_RO}
+if [ $? -ne 0 ]; then
+    log_failure_msg "${MYTAG} ERROR: failed to move ${ROOT_RO} to ${rootmnt}${ROOT_RO}"
+    exit 0
+fi
+
+# move mount from ${ROOT_RW} to ${rootmnt}${ROOT_RW} 
+[ -d ${rootmnt}${ROOT_RW} ] || mkdir -p ${rootmnt}${ROOT_RW}
+mount --move ${ROOT_RW} ${rootmnt}${ROOT_RW}
+if [ $? -ne 0 ]; then
+    s "${MYTAG}: ERROR: failed to move ${ROOT_RW} to ${rootmnt}${ROOT_RW}"
+    exit 0
+fi
+
+# technically, everything is set up nicely now. Since ${rootmnt} had beend 
+# mounted read-only on the initfamfs already, ${rootmnt}${ROOT_RO} is it, too.
+# Now we init process could run - but unfortunately, we may have to prepare 
+# some more things here. 
+# Basically, there are two ways to deal with the read-only root fs. If the 
+# system is made aware of this, things can be simplified a lot.
+# If it is not, things need to be done to our best knowledge. 
+#
+# So we assume here, the system does not really know about our read-only root fs.
+#
+# Let's deal with /etc/fstab first. It usually contains an entry for the root 
+# fs, which is no longer valid now. We have to remove it and add our new 
+# ${ROOT_RO} entry. 
+# Remember we are still on the initramfs root fs here, so we have to work on
+# ${rootmnt}/etc/fstab. The original fstab is ${rootmnt}${ROOT_RO}/etc/fstab.
+ROOT_TYPE=$(cat /proc/mounts | grep ${ROOT} | cut -d' ' -f3)
+ROOT_OPTIONS=$(cat /proc/mounts | grep ${ROOT} | cut -d' ' -f4)
+cat <<EOF >${rootmnt}/etc/fstab
+#
+#  This fstab is in RAM, the real one can be found at ${ROOT_RO}/etc/fstab
+#  The original entry for '/' and all swap files have been removed.  The new 
+#  entry for the read-only the real root fs follows. Write access can be 
+#  enabled using:
+#    sudo mount -o remount,rw ${ROOT_RO}
+#  re-mounting it read-only is done using:
+#    sudo mount -o remount,ro ${ROOT_RO}
+#
+
+${ROOT} ${ROOT_RO} ${ROOT_TYPE} ${ROOT_OPTIONS} 0 0
+
+#
+#  remaining entries from the original ${ROOT_RO}/etc/fstab follow.
+#
+EOF
+if [ $? -ne 0 ]; then
+    log_failure_msg "${MYTAG} ERROR: failed to modify /etc/fstab (step 1)"
+    #exit 0
+fi
+
+#remove root entry and swap from fstab
+cat ${rootmnt}${ROOT_RO}/etc/fstab | grep -v ' / ' | grep -v swap >>${rootmnt}/etc/fstab
+if [ $? -ne 0 ]; then
+    log_failure_msg "${MYTAG} ERROR: failed to modify etc/fstab (step 2)"
+    #exit 0
+fi
+
+# now we are done. Additinal steps may be necessary depending on the actualy
+# distribution and/or its configuration. 
+
+log_success_msg "${MYTAG} sucessfully set up layered root fs using ${OVERLAYROOT_DRIVER}"
+
+exit 0 

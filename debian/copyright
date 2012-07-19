@@ -23,3 +23,7 @@ License: GPL-3.0+
 Files: debian/*
 Copyright: 2011 Scott Moser <smoser@ubuntu.com>
 License: GPL-3.0+
+
+Files: debian/*overlayroot* overlayroot/*
+Copyright: 2012 Dustin Kirkland <kirkland@ubuntu.com>
+License: GPL-3.0+

@@ -1,0 +1,38 @@
+# To enable overlayroot:
+#   1) Copy this file to /etc/initramfs-tools/conf.d/overlayroot
+#   2) Edit it to your liking
+#   3) Run 'sudo update-initramfs -u'
+#   4) And finally 'sudo reboot'
+
+# To enable overlayroot, you must choose a backing device.
+# Note that this can either be "tmpfs" which means that changes
+# are stored in memory and discarded on reboot, or a physical
+# disk or partition.
+#OVERLAYROOT_BACKING_DEVICE=tmpfs
+#OVERLAYROOT_BACKING_DEVICE=/dev/xvdb
+
+# The backing device can be encrypted using dmcrypt.  Enable this here.
+#OVERLAYROOT_ENCRYPTED=y
+
+# If using an encrypted backing device, you can set the encryption
+# password here.  Otherwise, it will be randomly generated.  NOTE THAT
+# IT IS INSECURE TO SET THIS PASSWORD HERE IN THIS CLEARTEXT
+# CONFIGURATION FILE.  Randomly generated passwords are more secure,
+# but you won't be able to read your encrypted disk on reboot.
+# If you set this password, you must have already configured this
+# disk with this password using luks and formatted it.
+# Hint:
+#  $ sudo wipefs -a ${OVERLAYROOT_BACKING_DEVICE}
+#  $ printf "%s" "$OVERLAYROOT_PASSWORD" | sudo cryptsetup luksFormat  ${OVERLAYROOT_BACKING_DEVICE} --key-file -
+#  $ printf "%s" "$OVERLAYROOT_PASSWORD" | sudo cryptsetup luksOpen ${OVERLAYROOT_BACKING_DEVICE} ${OVERLAYROOT_MAPNAME} --key-file -
+#  $ sudo mke2fs -t ${OVERLAYROOT_BACKING_FILESYSTEM} /dev/mapper/${OVERLAYROOT_MAPNAME}
+#OVERLAYROOT_PASSWORD=some_password
+
+# If using an encrypted backing device, you can choose your device
+# map name in /dev/mapper/*.  The default is "secure".
+#OVERLAYROOT_MAPNAME=secure
+
+# If using an encrypted backing device and a randomly generated
+# password, your filesystem will be automatically formatted on boot.
+# You can choose your filesystem here.  The default is ext4.
+#OVERLAYROOT_BACKING_FILESYSTEM=ext4
