@@ -4,6 +4,7 @@ cloud-initramfs-tools (0.5ubuntu1) UNRELEASED; urgency=low
   * Add support for an overlayroot binary package
     - adds overlayfs support on top of a read only root
       with an optional backing device that can optionally be encrypted
+    - include overlay-chroot utility with man page.
   [ Scott Moser ]
   * debian/control: set standards version to 3.9.3
 

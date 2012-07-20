@@ -1,3 +1,5 @@
 etc/overlayroot.conf
 usr/share/initramfs-tools/hooks/overlayroot
 usr/share/initramfs-tools/scripts/*/overlayroot
+usr/sbin/overlayroot-chroot
+usr/share/man/man8/overlayroot-chroot.8

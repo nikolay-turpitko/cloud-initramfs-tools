@@ -27,5 +27,8 @@ install:
 		mkdir -p "$(ULIB_PRE)$$d/" && \
 		install "$$d/tools"/* "$(ULIB_PRE)$$d/" ; \
 		done
+	mkdir -p "$(DESTDIR)/usr/sbin" "$(DESTDIR)/usr/share/man/man8"
+	install -m 755 "overlayroot/usr/sbin/overlayroot-chroot" "$(DESTDIR)/usr/sbin"
+	install -m 644 "overlayroot/usr/share/man/man8/overlayroot-chroot.8" "$(DESTDIR)/usr/share/man/man8"
 
 # vi: ts=4 noexpandtab syntax=make
