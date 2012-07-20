@@ -297,7 +297,7 @@ case "${overlayroot_driver}" in
 	overlayfs)
 		mount_type="overlayfs"
 		mount_opts="-o lowerdir=${root_ro},upperdir=${root_rw}/${dir_prefix}"
-		mount_opts="${mount_opts} overlayfs-root ${ROOTMNT}"
+		mount_opts="${mount_opts} overlayroot ${ROOTMNT}"
 		;;
 	aufs)
 		mount_type="aufs"
