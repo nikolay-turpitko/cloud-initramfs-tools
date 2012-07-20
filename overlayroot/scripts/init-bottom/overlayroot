@@ -105,8 +105,16 @@ get_kernel_cmdline() {
 	done
 	_RET="$val"
 }
+wait_for_dev() {
+	local dev="$1" timeout="${2:-0}"
+	[ -b "$dev" ] && return 0
+	[ "$timeout" = "0" ] && return 1
+	# wait-for-root writes fstype to stdout, redirect to null
+	wait-for-root "$dev" "$timeout" >/dev/null
+}
 crypto_setup() {
 	local fstype="ext3" pass="" mapname="secure" mkfs="1" dev=""
+	local timeout=0
 	# this does necessary crypto setup and sets _RET
 	# to the appropriate block device (ie /dev/mapper/secure)
 
@@ -125,16 +133,19 @@ crypto_setup() {
 	mapname=${_RET_mapname:-${mapname}}
 	mkfs=${_RET_mkfs:-${mkfs}}
 	dev=${_RET_dev:-${dev}}
+	timeout=${_RET_timeout:-${timeout}}
 
 	debug "fstype=${fstype} pass=${pass} mapname=${mapname}"
-	debug "mkfs=${mkfs} dev=${dev}"
+	debug "mkfs=${mkfs} dev=${dev} timeout=${timeout}"
 
 	dev="/dev/${dev#/dev/}"
 	[ -n "$dev" ] ||
 		{ log_fail "dev is required input for crypt setup"; return 1; }
-	[ -b "$dev" ] ||
-		{ log_fail "crypt dev device $dev does not exist"; return 1; }
 
+	wait_for_dev "$dev" "$timeout" || {
+		log_fail "crypt dev device $dev does not exist after ${timeout}s";
+		return 1;
+	}
 
 	if [ -n "$pass" ]; then
 		printf "%s" "$pass" |
