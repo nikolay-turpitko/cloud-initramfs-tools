@@ -41,6 +41,7 @@ MYTAG="overlayroot"
 root_rw=/media/root-rw
 root_ro=/media/root-ro
 ROOTMNT=${rootmnt} # use global name to indicate created outside this
+OVERLAYFS_DEBUG=0
 
 log_fail() { log_failure_msg "${MYTAG}: $*"; }
 log_success() { log_success_msg "${MYTAG}: $*"; }
@@ -48,6 +49,10 @@ log_warn() { log_warning_msg "${MYTAG}: $*"; }
 fail() {
 	[ $# -eq 0 ] || log_fail "$@";
 	exit 0; # why do we exit success?
+}
+debug() {
+	[ "${OVERLAYFS_DEBUG:-0}" = "0" ] && return
+	echo "$MYTAG:" "$@"
 }
 send_input() {
 	local tmpfile="/tmp/${0##*/}.$$"
@@ -96,7 +101,7 @@ get_kernel_cmdline() {
 	done
 	_RET="$val"
 }
-cryptsetup() {
+crypto_setup() {
 	local fstype="ext3" pass="" mapname="secure" mkfs="1" dev=""
 	# this does necessary crypto setup and sets _RET
 	# to the appropriate block device (ie /dev/mapper/secure)
@@ -116,6 +121,9 @@ cryptsetup() {
 	mapname=${_RET_mapname:-${mapname}}
 	mkfs=${_RET_mkfs:-${mkfs}}
 	dev=${_RET_dev:-${dev}}
+
+	debug "fstype=${fstype} pass=${pass} mapname=${mapname}"
+	debug "mkfs=${mkfs} dev=${dev}"
 
 	dev="/dev/${dev#/dev/}"
 	[ -n "$dev" ] ||
@@ -184,6 +192,7 @@ for pairs in "initramfs config:/conf/conf.d/overlayroot" \
 	if [ "$prev_val" != "$overlayroot" ]; then
 		used_file="$cur_file"
 		used_desc="$cur_desc"
+		debug "$cur_file set overlayroot=$overlayroot"
 	fi
 	if [ -n "$prev_val" -a "$overlayroot" != "$prev_val" ]; then
 		log_warn "$cur_desc overwrote value from $prev_desc with '$overlayroot'"
@@ -204,12 +213,12 @@ case "${overlayroot:-disabled}" in
 	crypt|crypt:*)
 		mode="crypt"
 		t=${overlayroot#crypt}
-		crypt_setup "${t#:}" ||
+		crypto_setup "${t#:}" ||
 			fail "failed setup crypt for ${overlayroot}"
 		device="$_RET"
 		;;
 	disabled)
-		log_warn "overlayroot disabled"
+		debug "overlayroot disabled${used_desc:+ per ${used_desc}}"
 		exit 0;;
 	*)
 		fail "invalid value for overlayroot: $overlayroot";
