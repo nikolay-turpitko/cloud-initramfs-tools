@@ -189,7 +189,7 @@ dev_setup() {
 	local options="$1" dev="" timeout=0
 	# options supported:
 	#    dev=device,timeout=X
-	parse_string "${overlayroot#crypt:}" ||
+	parse_string "${options}" ||
 		{ log_fail "failed parsing '${options}'"; return 1; }
 
 	dev=${_RET_dev:-${dev}}
