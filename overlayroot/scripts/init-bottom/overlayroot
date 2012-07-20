@@ -238,9 +238,7 @@ case "${overlayroot:-disabled}" in
 		dev_setup "device=${overlayroot#device:}" ||
 			fail "failed setup overlay for ${overlayroot}"
 		mode="device"
-		device="$overlayroot"
-		[ -b "$device" ] ||
-			fail "overlay root device '$device' does not exist"
+		device="$_RET"
 		;;
 	crypt|crypt:*)
 		mode="crypt"
