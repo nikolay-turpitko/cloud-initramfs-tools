@@ -114,7 +114,7 @@ wait_for_dev() {
 }
 crypto_setup() {
 	local fstype="ext3" pass="" mapname="secure" mkfs="1" dev=""
-	local timeout=0
+	local timeout=0 dir="/"
 	# this does necessary crypto setup and sets _RET
 	# to the appropriate block device (ie /dev/mapper/secure)
 
@@ -134,11 +134,13 @@ crypto_setup() {
 	mkfs=${_RET_mkfs:-${mkfs}}
 	dev=${_RET_dev:-${dev}}
 	timeout=${_RET_timeout:-${timeout}}
-
-	debug "fstype=${fstype} pass=${pass} mapname=${mapname}"
-	debug "mkfs=${mkfs} dev=${dev} timeout=${timeout}"
+	dir=${_RET_dir:-${dir}}
 
 	dev="/dev/${dev#/dev/}"
+
+	debug "fstype=${fstype} pass=${pass} mapname=${mapname}"
+	debug "mkfs=${mkfs} dev=${dev} timeout=${timeout} dir=${dir}"
+
 	[ -n "$dev" ] ||
 		{ log_fail "dev is required input for crypt setup"; return 1; }
 
@@ -181,23 +183,29 @@ crypto_setup() {
 		return 1;
 	}
 
-	_RET="/dev/mapper/$mapname"
+	_RET_DEVICE="/dev/mapper/$mapname"
+	_RET_DIR="$dir"
 	return 0
 }
 
 dev_setup() {
-	local options="$1" dev="" timeout=0
+	local options="$1" dev="" timeout=0 path="/"
 	# options supported:
-	#    dev=device,timeout=X
+	#    dev=device,timeout=X,path=/
 	parse_string "${options}" ||
 		{ log_fail "failed parsing '${options}'"; return 1; }
 
 	dev=${_RET_dev:-${dev}}
 	timeout=${_RET_timeout:-${timeout}}
+	dir=${_RET_dir:-${dir}}
 
 	dev="/dev/${dev#/dev/}"
+
+	debug "dev=${dev} timeout=${timeout} dir=${dir}"
+
 	wait_for_dev "$dev" "$timeout"
-	_RET="$dev"
+	_RET_DEVICE="$dev"
+	_RET_DIR="$dir"
 }
 
 
@@ -238,14 +246,16 @@ case "${overlayroot:-disabled}" in
 		dev_setup "device=${overlayroot#device:}" ||
 			fail "failed setup overlay for ${overlayroot}"
 		mode="device"
-		device="$_RET"
+		device="$_RET_DEVICE"
+		dir_prefix="$_RET_DIR"
 		;;
 	crypt|crypt:*)
 		mode="crypt"
 		t=${overlayroot#crypt}
 		crypto_setup "${t#:}" ||
 			fail "failed setup crypt for ${overlayroot}"
-		device="$_RET"
+		device="$_RET_DEVICE"
+		dir_prefix="$_RET_DIR"
 		;;
 	disabled)
 		debug "overlayroot disabled${used_desc:+ per ${used_desc}}"
@@ -265,12 +275,12 @@ overlayroot_driver=${overlayroot_driver:-overlayfs}
 case "${overlayroot_driver}" in
 	overlayfs)
 		mount_type="overlayfs"
-		mount_opts="-o lowerdir=${root_ro},upperdir=${root_rw}"
+		mount_opts="-o lowerdir=${root_ro},upperdir=${root_rw}/${dir_prefix}"
 		mount_opts="${mount_opts} overlayfs-root ${ROOTMNT}"
 		;;
 	aufs)
 		mount_type="aufs"
-		mount_opts="-o dirs=${root_rw}:${root_ro}=ro aufs-root ${ROOTMNT}"
+		mount_opts="-o dirs=${root_rw}/${dir_prefix}:${root_ro}=ro aufs-root ${ROOTMNT}"
 		;;
 	*)
 		log_fail "invalid overlayroot driver: ${overlayroot_driver}"
@@ -299,6 +309,8 @@ else
 	# dev or crypto
 	mount "$device" "${root_rw}" ||
 		fail "failed mount backing device $device"
+	mkdir -p "${root_rw}/${dir_prefix}" ||
+		fail "failed to create ${dir_prefix} on ${device}"
 fi
 
 # root is mounted on ${ROOTMNT}, move it to ${ROOT_RO}.
