@@ -1,11 +1,11 @@
-cloud-initramfs-tools (0.6) UNRELEASED; urgency=low
+cloud-initramfs-tools (0.6-0ubuntu1) quantal; urgency=low
 
   * debian/control, debian/README.source:
     - update upstream location of project
   * debian/copyright:
     - update copyrights
 
- -- Dustin Kirkland <kirkland@ubuntu.com>  Fri, 20 Jul 2012 16:21:09 -0500
+ -- Dustin Kirkland <kirkland@ubuntu.com>  Fri, 20 Jul 2012 17:00:19 -0500
 
 cloud-initramfs-tools (0.5ubuntu1) quantal; urgency=low
 
