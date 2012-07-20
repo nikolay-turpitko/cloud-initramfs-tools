@@ -63,6 +63,17 @@ send_input() {
 	rm -f $tmpfile
 	return $ret
 }
+safe_string() {
+	local prev="$1" allowed="$2" cur=""
+	[ -n "$prev" ] || return 1
+	while cur="${prev#[${allowed}]}"; do
+		[ -z "$cur" ] && return 0
+		[ "$cur" = "$prev" ] && break
+		prev="$cur"
+	done
+	return 1
+}
+
 parse_string() {
 	# parse a key/value string like:
 	# name=mapper,pass=foo,fstype=ext4,mkfs=1
@@ -80,6 +91,8 @@ parse_string() {
 		key="${tok%%=*}"
 		val="${tok#${key}}"
 		val=${val#=}
+		safe_string "$key" "0-9a-zA-Z_" ||
+			{ debug "$key not a safe variable name"; return 1; }
 		eval "${ns}${key}"='${val}' || return 1
 		keys="${keys} ${ns}${key}"
 	done
