@@ -43,16 +43,27 @@ root_ro=/media/root-ro
 ROOTMNT=${rootmnt} # use global name to indicate created outside this
 OVERLAYROOT_DEBUG=0
 
-log_fail() { log_failure_msg "${MYTAG}: $*"; }
-log_success() { log_success_msg "${MYTAG}: $*"; }
-log_warn() { log_warning_msg "${MYTAG}: $*"; }
+log() {
+	"log_${1}_msg" "$MYTAG:" "$2";
+	_debug "[$1]:" "$2"
+}
+log_fail() { log failure "$*"; }
+log_success() { log success "$*"; }
+log_warn() { log warning "$*"; }
 fail() {
 	[ $# -eq 0 ] || log_fail "$@";
 	exit 0; # why do we exit success?
 }
 debug() {
+	_debug "$@"
 	[ "${OVERLAYROOT_DEBUG:-0}" = "0" ] && return
 	echo "$MYTAG:" "$@"
+}
+_debug() {
+	if [ "${DEBUG_BUSTED:-0}" = "0" ]; then
+		{ echo "$@" >> "/dev/.initramfs/${MYTAG}.log"; } 2>/dev/null ||
+			{ DEBUG_BUSTED=1; log_warn "debug is busted"; }
+	fi
 }
 safe_string() {
 	local prev="$1" allowed="$2" cur=""
