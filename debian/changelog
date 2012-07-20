@@ -1,3 +1,16 @@
+cloud-initramfs-tools (0.5ubuntu1) quantal; urgency=low
+
+  [ Dustin Kirkland ]
+  * Add support for an overlayroot binary package
+    - adds overlayfs support on top of a read only root
+      with an optional backing device that can optionally be encrypted
+    - include overlay-chroot utility with man page.
+
+  [ Scott Moser ]
+  * debian/control: set standards version to 3.9.3
+
+ -- Dustin Kirkland <kirkland@ubuntu.com>  Fri, 20 Jul 2012 16:07:18 -0500
+
 cloud-initramfs-tools (0.4ubuntu1) precise; urgency=low
 
   * growroot: run 'udevadm settle' before attempting growpart to

@@ -1,0 +1,22 @@
+#!/bin/sh
+set -e
+
+PREREQS=""
+case $1 in
+	prereqs) echo "${PREREQS}"; exit 0;;
+esac
+
+. /usr/share/initramfs-tools/hook-functions
+
+##
+copy_exec /usr/bin/pwgen /bin
+copy_exec /sbin/wipefs /sbin
+copy_exec /sbin/cryptsetup /sbin
+copy_exec /sbin/mke2fs /sbin
+
+manual_add_modules overlayfs
+manual_add_modules dm_mod
+manual_add_modules dm_crypt
+egrep -qswo "aes" /proc/cpuinfo && manual_add_modules aesni_intel || true
+
+# vi: ts=4 noexpandtab

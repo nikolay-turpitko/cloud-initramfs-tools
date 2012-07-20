@@ -3,7 +3,7 @@ Section: admin
 Priority: extra
 Maintainer: Scott Moser <smoser@ubuntu.com>
 Build-Depends: debhelper (>= 7.0.50~)
-Standards-Version: 3.9.1
+Standards-Version: 3.9.3
 
 Package: cloud-initramfs-rescuevol
 Architecture: all
@@ -32,3 +32,15 @@ Description: automatically resize the root partition on first boot
  a disk can provisioned with a size larger than its original size.
  In this case, with this package installed, you can automatically use
  the new space without requiring a reboot to re-read the partition table.
+
+Package: cloud-initramfs-overlayroot
+Architecture: all
+Depends: ${shlibs:Depends}, ${misc:Depends}, initramfs-tools, util-linux (>= 2.17.2), cloud-utils (>= 0.21ubuntu1), pwgen, cryptsetup, cryptsetup-bin
+Description: use an overlayfs on top of a read-only root filesystem
+ This package adds functionality to an initramfs built by initramfs-tools.
+ When installed and configured, the initramfs will mount an overlayfs 
+ filesystem on top of a read-only root volume.
+ .
+ The changes can be written to a in-memory temporary filesystem, a
+ filesystem on an existing block device, or a dmcrypt encrypted block
+ device.
