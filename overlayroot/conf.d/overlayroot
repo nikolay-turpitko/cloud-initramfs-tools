@@ -18,10 +18,9 @@
 #    example:
 #      overlayroot="/dev/xvdb"
 #
-#  * overlayroot="crypt[:PARAMETERS]"
+#  * overlayroot="crypt:PARAMETERS"
 #    use an encrypted [dmcrypt] device as the backing device. Parameters
-#    are comma delimited key=value pairs.  All keys have default
-#    values, so 'crypt' or 'crypt:' is acceptable input
+#    are comma delimited key=value pairs.
 #    
 #    available parameters are:
 #     * mapname: default: "secure"
@@ -36,8 +35,11 @@
 #            if no pass given, create new
 #         2: if pass is given and mount fails, fail
 #            if no pass given, create new
+#     * dev: default: "" [required]
+#       use given device for backing filesystem.
+#       
 #    example:
-#      crypt:mapname=mapper,pass=foo,fstype=ext4,mkfs=1
+#      crypt:mapname=mapper,pass=foo,fstype=ext4,mkfs=1,dev=vdb
 #
 overlayroot=""
 
