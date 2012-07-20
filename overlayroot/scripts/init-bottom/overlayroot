@@ -334,7 +334,7 @@ awk '{
 	}' "${ROOTMNT}${root_ro}/etc/fstab" >> "${ROOTMNT}/etc/fstab" ||
 	log_fail "failed to modify etc/fstab (step 2)"
 
-log_success "sucessfully set ${overlayroot_driver} mount backed by $mode"
+log_success "configured root with '$overlayroot' using ${overlayroot_driver}"
 
 exit 0 
 # vi: ts=4 noexpandtab
