@@ -201,7 +201,7 @@ for pairs in "initramfs config:/conf/conf.d/overlayroot" \
 	cur_desc=${pairs%%:*}
 	cur_file=${pairs#${cur_desc}:}
 	[ -f "$cur_file" ] || continue
-	. "$cur_file"
+	set -f; . "$cur_file"; set +f
 	if [ "$prev_val" != "$overlayroot" ]; then
 		used_file="$cur_file"
 		used_desc="$cur_desc"
