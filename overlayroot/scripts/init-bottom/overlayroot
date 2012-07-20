@@ -185,6 +185,21 @@ crypto_setup() {
 	return 0
 }
 
+dev_setup() {
+	local options="$1" dev="" timeout=0
+	# options supported:
+	#    dev=device,timeout=X
+	parse_string "${overlayroot#crypt:}" ||
+		{ log_fail "failed parsing '${options}'"; return 1; }
+
+	dev=${_RET_dev:-${dev}}
+	timeout=${_RET_timeout:-${timeout}}
+
+	dev="/dev/${dev#/dev/}"
+	wait_for_dev "$dev" "$timeout"
+	_RET="$dev"
+}
+
 
 # collect kernel parameter value into a config file
 kern_cfg="/tmp/${0##*/}.kernel-cmdline.cfg"
@@ -219,7 +234,9 @@ rm -f "$kern_cfg"
 
 case "${overlayroot:-disabled}" in
 	tmpfs) mode="tmpfs";;
-	/dev/*)
+	/dev/*|device:*)
+		dev_setup "device=${overlayroot#device:}" ||
+			fail "failed setup overlay for ${overlayroot}"
 		mode="device"
 		device="$overlayroot"
 		[ -b "$device" ] ||
