@@ -186,7 +186,7 @@ for pairs in "initramfs config:/conf/conf.d/overlayroot" \
 	"$ROOT/etc/overlayroot.conf:${ROOTMNT}/etc/overlayroot.conf" \
 	"kernel cmdline:$kern_cfg"; do
 	cur_desc=${pairs%%:*}
-	cur_file=${pairs#${desc}:}
+	cur_file=${pairs#${cur_desc}:}
 	[ -f "$cur_file" ] || continue
 	. "$cur_file"
 	if [ "$prev_val" != "$overlayroot" ]; then
