@@ -167,8 +167,12 @@ crypto_setup() {
 		printf "%s" "$pass" |
 			cryptsetup luksOpen "$dev" "$mapname" --key-file -
 		if [ $? -eq 0 ]; then
+			local tdev="/dev/mapper/$mapname"
 			log_warn "reusing existing luks device at $dev"
-			_RET="/dev/mapper/$mapname"
+			wait_for_dev "$tdev" 20 ||
+				{ log_fail "$tdev did not appear"; return 1; }
+			_RET_DEVICE="/dev/mapper/$mapname"
+			_RET_DIR="$dir"
 			return 0
 		fi
 		if [ "$mkfs" != "1" ]; then

@@ -1,6 +1,9 @@
 cloud-initramfs-tools (0.7) unreleased; urgency=low
 
-  * UNRELEASED
+  [ Scott Moser ]
+  * overlayroot/scripts/init-bottom/overlayroot:
+    - fix race condition, waiting for crypt filesystem to map
+    - use wait loop
 
  -- Dustin Kirkland <kirkland@ubuntu.com>  Fri, 20 Jul 2012 17:00:22 -0500
 
