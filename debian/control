@@ -4,6 +4,8 @@ Priority: extra
 Maintainer: Scott Moser <smoser@ubuntu.com>
 Build-Depends: debhelper (>= 7.0.50~)
 Standards-Version: 3.9.3
+Homepage: http://launchpad.net/cloud-initramfs-tools
+Vcs-Bzr: http://code.launchpad.net/~cloud-initramfs-tools/cloud-initramfs-tools/trunk
 
 Package: cloud-initramfs-rescuevol
 Architecture: all
