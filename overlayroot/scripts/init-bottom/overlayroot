@@ -152,7 +152,7 @@ crypto_setup() {
 	else
 		[ "$mkfs" = "0" ] &&
 			{ log_fail "mkfs=0, but no password provided"; return 1; }
-		pass=$(pwgen 80) ||
+		pass=$(pwgen -s 80) ||
 			{ log_fail "failed generation of password"; return 1; }
 	fi
 
