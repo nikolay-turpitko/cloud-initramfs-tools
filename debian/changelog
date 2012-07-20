@@ -1,6 +1,8 @@
 cloud-initramfs-tools (0.8) unreleased; urgency=low
 
-  * UNRELEASED
+  * overlayroot/etc/overlayroot.conf, overlayroot/scripts/init-
+    bottom/overlayroot:
+    - default to ext4, much faster to format when doing this dynamically
 
  -- Dustin Kirkland <kirkland@ubuntu.com>  Fri, 20 Jul 2012 17:47:51 -0500
 

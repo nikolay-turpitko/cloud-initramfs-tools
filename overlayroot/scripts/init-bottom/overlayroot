@@ -124,7 +124,7 @@ wait_for_dev() {
 	wait-for-root "$dev" "$timeout" >/dev/null
 }
 crypto_setup() {
-	local fstype="ext3" pass="" mapname="secure" mkfs="1" dev=""
+	local fstype="ext4" pass="" mapname="secure" mkfs="1" dev=""
 	local timeout=0 dir="/"
 	# this does necessary crypto setup and sets _RET
 	# to the appropriate block device (ie /dev/mapper/secure)
