@@ -147,6 +147,9 @@ crypto_setup() {
 	timeout=${_RET_timeout:-${timeout}}
 	dir=${_RET_dir:-${dir}}
 
+	[ -n "$dev" ] ||
+		{ log_fail "dev= argument not provided in '${options}'"; return 1; }
+
 	dev="/dev/${dev#/dev/}"
 
 	debug "fstype=${fstype} pass=${pass} mapname=${mapname}"
@@ -210,6 +213,9 @@ dev_setup() {
 	timeout=${_RET_timeout:-${timeout}}
 	dir=${_RET_dir:-${dir}}
 
+	[ -n "$dev" ] ||
+		{ log_fail "dev= argument not provided in '${options}'"; return 1; }
+
 	dev="/dev/${dev#/dev/}"
 
 	debug "dev=${dev} timeout=${timeout} dir=${dir}"
@@ -254,8 +260,12 @@ rm -f "$kern_cfg"
 case "${overlayroot:-disabled}" in
 	tmpfs) mode="tmpfs";;
 	/dev/*|device:*)
-		dev_setup "device=${overlayroot#device:}" ||
-			fail "failed setup overlay for ${overlayroot}"
+		case "$overlayroot" in
+			/dev/*) opts="dev=${overlayroot}";;
+			*) opts="${overlayroot#device:}";;
+		esac
+		dev_setup "${opts}" ||
+			fail "failed setup overlay for ${overlayroot} [$opts]"
 		mode="device"
 		device="$_RET_DEVICE"
 		dir_prefix="$_RET_DIR"
