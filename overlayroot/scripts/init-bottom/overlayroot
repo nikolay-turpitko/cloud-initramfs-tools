@@ -148,7 +148,7 @@ crypto_setup() {
 	if [ -n "$pass" ]; then
 		send_input "$pass" \
 			cryptsetup luksOpen "$dev" "$mapname" --key-file -
-		if [ $# -eq 0 ]; then
+		if [ $? -eq 0 ]; then
 			log_warn "reusing existing luks device at $dev"
 			_RET="/dev/mapper/$mapname"
 			return 0
