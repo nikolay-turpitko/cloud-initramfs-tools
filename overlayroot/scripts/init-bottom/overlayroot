@@ -297,7 +297,7 @@ case "${overlayroot_driver}" in
 	overlayfs)
 		mount_type="overlayfs"
 		mount_opts="-o lowerdir=${root_ro},upperdir=${root_rw}/${dir_prefix}"
-		mount_opts="${mount_opts} overlayfs-root ${ROOTMNT}"
+		mount_opts="${mount_opts} overlayroot ${ROOTMNT}"
 		;;
 	aufs)
 		mount_type="aufs"
@@ -321,9 +321,9 @@ mkdir -p "${root_rw}" ||
 mkdir -p "${root_ro}" ||
 	fail "failed to create ${root_ro}"
 
-# mount the backing devie to $root_rw
+# mount the backing device to $root_rw
 if [ "$mode" = "tmpfs" ]; then
-	# mount a tempfs using the device name tmpfs-root
+	# mount a tmpfs using the device name tmpfs-root
 	mount -t tmpfs tmpfs-root "${root_rw}" ||
 		fail "failed to create tmpfs"
 else
@@ -346,7 +346,7 @@ mount --move "${ROOTMNT}" "${root_ro}" ||
 # mount virtual fs ${ROOTMNT} with rw-fs ${root_rw} on top or ro-fs ${root_ro}.
 mount -t "$mount_type" $mount_opts
 if [ $? -ne 0 ]; then
-	log_fail "failed to create new ro/rw layerd ${ROOTMNT}"
+	log_fail "failed to create new ro/rw layered ${ROOTMNT}"
 	# do recovery and try resoring the mount for ${ROOTMNT}
 	mount --move ${root_ro} ${ROOTMNT}
 	if [ $? -ne 0 ]; then
@@ -398,13 +398,13 @@ root_type=$(awk '$1 == root { print $3 }' "root=$ROOT" /proc/mounts)
 root_options=$(awk '$1 == root { print $4 }' "root=$ROOT" /proc/mounts)
 cat <<EOF >${ROOTMNT}/etc/fstab
 #
-#  This fstab is in RAM, the real one can be found at ${root_ro}/etc/fstab
-#  The original entry for '/' and all swap files have been removed.  The new 
-#  entry for the read-only the real root fs follows. Write access can be 
-#  enabled using:
-#	sudo mount -o remount,rw ${root_ro}
-#  re-mounting it read-only is done using:
-#	sudo mount -o remount,ro ${root_ro}
+#  This fstab is in an overlayfs.  The real one can be found at
+#  ${root_ro}/etc/fstab
+#  The original entry for '/' and all swap files have been removed.  The new
+#  entry for the read-only the real root fs follows.  To permanently
+#  modify this (or any other file), you should change-root into a writable
+#  view of the underlying filesystem using:
+#      sudo overlayroot-chroot
 #
 
 ${ROOT} ${root_ro} ${root_type} ${root_options} 0 0

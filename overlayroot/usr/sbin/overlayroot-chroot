@@ -29,8 +29,8 @@ info() {
 }
 
 get_lowerdir() {
-	overlay=$(grep "^overlayfs-root / overlayfs " /proc/mounts)
-	if [ $? -eq 0 ]; then
+	overlay=$(grep -m1 "^overlayroot / overlayfs " /proc/mounts) || overlay=
+	if [ -n "${overlay}" ]; then
 		lowerdir=${overlay##*lowerdir=}
 		lowerdir=${lowerdir%%,*}
 		if mountpoint "${lowerdir}" >/dev/null; then
