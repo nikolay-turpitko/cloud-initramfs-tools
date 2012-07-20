@@ -26,7 +26,7 @@
 #    <http://www.gnu.org/licenses/>.
 
 case "$1" in
- 	# no pre-reqs
+	# no pre-reqs
 	prereqs) echo ""; exit 0;;
 esac
 
@@ -51,7 +51,7 @@ fail() {
 }
 send_input() {
 	local tmpfile="/tmp/${0##*/}.$$"
-    printf "%s" "$1" > "$tmpfile" &&
+	printf "%s" "$1" > "$tmpfile" &&
 		shift && "$@" < "$tmpfile" &&
 		rm -f "$tmpfile" && return 0
 	local ret=$?
@@ -59,27 +59,27 @@ send_input() {
 	return $ret
 }
 parse_string() {
-  # parse a key/value string like:
-  # name=mapper,pass=foo,fstype=ext4,mkfs=1
-  # set variables under namespace 'ns'.
-  #  _RET_name=mapper
-  #  _RET_pass=foo
-  #  _RET_fstype=ext4
-  # set _RET to the list of variables found
-  local input="${1}" delim="${2:-,}" ns="${3:-_RET_}"
-  local oifs="$IFS" tok="" keys="" key="" val=""
+	# parse a key/value string like:
+	# name=mapper,pass=foo,fstype=ext4,mkfs=1
+	# set variables under namespace 'ns'.
+	#  _RET_name=mapper
+	#  _RET_pass=foo
+	#  _RET_fstype=ext4
+	# set _RET to the list of variables found
+	local input="${1}" delim="${2:-,}" ns="${3:-_RET_}"
+	local oifs="$IFS" tok="" keys="" key="" val=""
 
-  set -f; IFS="$delim"; set -- $input; IFS="$oifs"; set +f;
-  _RET=""
-  for tok in "$@"; do
-    key="${tok%%=*}"
-    val="${tok#${key}}"
-    val=${val#=}
-    eval "${ns}${key}"='${val}' || return 1
-    keys="${keys} ${ns}${key}"
-  done
-  _RET=${keys# }
-  return
+	set -f; IFS="$delim"; set -- $input; IFS="$oifs"; set +f;
+	_RET=""
+	for tok in "$@"; do
+		key="${tok%%=*}"
+		val="${tok#${key}}"
+		val=${val#=}
+		eval "${ns}${key}"='${val}' || return 1
+		keys="${keys} ${ns}${key}"
+	done
+	_RET=${keys# }
+	return
 }
 get_varval() { eval _RET='${'$1'}'; }
 get_kernel_cmdline() {
@@ -138,7 +138,7 @@ cryptsetup() {
 		fi
 		log_warn "re-opening $dev failed with mkfs=$mkfs will create new"
 	else
- 		pass=$(pwgen 80) ||
+		pass=$(pwgen 80) ||
 			{ log_fail "failed generation of password"; return 1; }
 	fi
 
