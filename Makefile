@@ -6,7 +6,7 @@ ULIB_PRE = $(DESTDIR)/usr/lib/cloud-initramfs-
 build:
 
 install:
-	mkdir -p "$(IRD)/hooks" "$(IRD)/scripts" "$(IRD)/conf.d"
+	mkdir -p "$(IRD)/hooks" "$(IRD)/scripts" "$(DESTDIR)/etc"
 	set -e; for d in $(MODULES); do \
 		[ -d "$$d/hooks" ] || continue ; \
 		install "$$d/hooks"/* "$(IRD)/hooks" ; \
@@ -19,8 +19,8 @@ install:
 			install "$$sd"/* "$$td"; \
 		done; done
 	set -e; for d in $(MODULES); do \
-		[ -d "$$d/conf.d" ] || continue ; \
-		install "$$d/conf.d"/* "$(IRD)/conf.d" ; \
+		[ -d "$$d/etc" ] || continue ; \
+		install -m 644 "$$d/etc"/* "$(DESTDIR)/etc" ; \
 		done
 	set -e; for d in $(MODULES); do \
 		[ -d "$$d/tools" ] || continue ; \
