@@ -169,17 +169,29 @@ get_kernel_cmdline || fail "failed to read kernel command line!"
 [ -n "$_RET" ] && echo "overlayroot=${_RET}" > "$kern_cfg"
 
 overlayroot=""
-prev=""
-prev_cfg=""
+prev_desc=""
+prev_file=""
+prev_val=""
 # each of these config locations gets an opportunity to override
 # previous declaration.
-for cfg in /conf/conf.d/overlayroot "${ROOTMNT}/etc/overlayroot.conf" \
-	"$kern_cfg"; do
-	[ -f "$cfg" ] || continue
-	. "$cfg"
-	[ -n "$prev" -a "$overlayroot" != "$prev" ] &&
-		log_warn "$cfg overwrote value from $prev_cfg with '$overlayroot'"
+for pairs in "initramfs config:/conf/conf.d/overlayroot" \
+	"$ROOT/etc/overlayroot.conf:${ROOTMNT}/etc/overlayroot.conf" \
+	"kernel cmdline:$kern_cfg"; do
+	cur_desc=${pairs%%:*}
+	cur_file=${pairs#${desc}:}
+	[ -f "$cur_file" ] || continue
+	. "$cur_file"
+	if [ "$prev_val" != "$overlayroot" ]; then
+		used_file="$cur_file"
+		used_desc="$cur_desc"
+	fi
+	if [ -n "$prev_val" -a "$overlayroot" != "$prev_val" ]; then
+		log_warn "$cur_desc overwrote value from $prev_desc with '$overlayroot'"
+	fi
+	prev_file="$cur_file"
+	prev_desc="$cur_desc"
 done
+rm -f "$kern_cfg"
 
 case "${overlayroot:-disabled}" in
 	tmpfs) mode="tmpfs";;
@@ -203,6 +215,8 @@ case "${overlayroot:-disabled}" in
 		fail "invalid value for overlayroot: $overlayroot";
 		exit 0;;
 esac
+
+log_warn "configuring 'overlayroot=$overlayroot' per $used_desc"
 
 # overlayroot_driver *could* be defined in one of the configs above
 # but we're not documenting that.
@@ -336,7 +350,9 @@ awk '{
 	}' "${ROOTMNT}${root_ro}/etc/fstab" >> "${ROOTMNT}/etc/fstab" ||
 	log_fail "failed to modify etc/fstab (step 2)"
 
-log_success "configured root with '$overlayroot' using ${overlayroot_driver}"
+msg="configured root with '$overlayroot' using ${overlayroot_driver} per"
+msg="$msg ${used_desc}"
+log_success "$msg"
 
 exit 0 
 # vi: ts=4 noexpandtab
