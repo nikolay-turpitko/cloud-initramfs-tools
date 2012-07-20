@@ -54,15 +54,6 @@ debug() {
 	[ "${OVERLAYROOT_DEBUG:-0}" = "0" ] && return
 	echo "$MYTAG:" "$@"
 }
-send_input() {
-	local tmpfile="/tmp/${0##*/}.$$"
-	printf "%s" "$1" > "$tmpfile" &&
-		shift && "$@" < "$tmpfile" &&
-		rm -f "$tmpfile" && return 0
-	local ret=$?
-	rm -f $tmpfile
-	return $ret
-}
 safe_string() {
 	local prev="$1" allowed="$2" cur=""
 	[ -n "$prev" ] || return 1
@@ -146,7 +137,7 @@ crypto_setup() {
 
 
 	if [ -n "$pass" ]; then
-		send_input "$pass" \
+		printf "%s" "$pass" |
 			cryptsetup luksOpen "$dev" "$mapname" --key-file -
 		if [ $? -eq 0 ]; then
 			log_warn "reusing existing luks device at $dev"
@@ -169,9 +160,9 @@ crypto_setup() {
 	# clear backing device
 	wipefs -a "$dev" ||
 		{ log_fail "failed to wipe $dev"; return 1; }
-	send_input "$pass" cryptsetup luksFormat "$dev" --key-file - ||
+	printf "%s" "$pass" | cryptsetup luksFormat "$dev" --key-file - ||
 		{ log_fail "luksFormat $dev failed"; return 1; }
-	send_input "$pass" \
+	printf "%s" "$pass" |
 		cryptsetup luksOpen "$dev" "$mapname" --key-file - ||
 		{ log_fail "luksOpen $dev failed"; return 1; }
 	mke2fs -t "${fstype}" "/dev/mapper/${mapname}" || {
