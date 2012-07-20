@@ -1,11 +1,13 @@
-cloud-initramfs-tools (0.5ubuntu1~ppa3) quantal; urgency=low
+cloud-initramfs-tools (0.5ubuntu1) UNRELEASED; urgency=low
 
+  [ Dustin Kirkland ]
   * Add support for an overlayroot binary package
     - adds overlayfs support on top of a read only root
-    - with an optional backing device
-    - that can optionally be encrypted
+      with an optional backing device that can optionally be encrypted
+  [ Scott Moser ]
+  * debian/control: set standards version to 3.9.3
 
- -- Dustin Kirkland <kirkland@ubuntu.com>  Wed, 18 Jul 2012 14:04:11 -0500
+ -- Scott Moser <smoser@ubuntu.com>  Thu, 19 Jul 2012 23:36:31 -0400
 
 cloud-initramfs-tools (0.4ubuntu1) precise; urgency=low
 

@@ -3,7 +3,7 @@ Section: admin
 Priority: extra
 Maintainer: Scott Moser <smoser@ubuntu.com>
 Build-Depends: debhelper (>= 7.0.50~)
-Standards-Version: 3.9.1
+Standards-Version: 3.9.3
 
 Package: cloud-initramfs-rescuevol
 Architecture: all
