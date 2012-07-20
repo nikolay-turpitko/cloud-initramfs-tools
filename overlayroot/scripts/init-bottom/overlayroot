@@ -125,7 +125,7 @@ crypto_setup() {
 	#  2: if pass is given and mount fails, fail
 	#     if no pass given, create new
 	local options="$1"
-	parse_string "${overlayroot#crypt:}" ||
+	parse_string "${options}" ||
 		{ log_fail "failed parsing '${options}'"; return 1; }
 
 	fstype=${_RET_fstype:-${fstype}}
