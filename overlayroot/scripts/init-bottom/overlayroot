@@ -124,7 +124,7 @@ crypto_setup() {
 	#     if no pass given, create new
 	#  2: if pass is given and mount fails, fail
 	#     if no pass given, create new
-	local options="$1" opened=0
+	local options="$1"
 	parse_string "${overlayroot#crypt:}" ||
 		{ log_fail "failed parsing '${options}'"; return 1; }
 
