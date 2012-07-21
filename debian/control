@@ -46,3 +46,11 @@ Description: use an overlayfs on top of a read-only root filesystem
  The changes can be written to a in-memory temporary filesystem, a
  filesystem on an existing block device, or a dmcrypt encrypted block
  device.
+
+Package: overlayroot
+Architecture: all
+Depends: ${shlibs:Depends}, ${misc:Depends}, cloud-initramfs-overlayroot
+Description: overlayfs on top of a read-only root filesystem (meta)
+ This is a meta package that installs the wordier
+ cloud-initramfs-overlayroot binary package.  Note at this functionality
+ is not actually cloud specific.

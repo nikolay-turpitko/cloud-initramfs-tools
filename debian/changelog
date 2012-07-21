@@ -1,6 +1,9 @@
 cloud-initramfs-tools (0.9) unreleased; urgency=low
 
-  * UNRELEASED
+  * debian/control:
+    - add a binary metapackage, overlayroot, which is a lot less
+      wordy than cloud-initramfs-overlayroot
+    - this functionality is not actually cloud-specific
 
  -- Dustin Kirkland <kirkland@ubuntu.com>  Fri, 20 Jul 2012 17:57:26 -0500
 
