@@ -18,6 +18,8 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 set -e
+set -f # disable path expansion
+REMOUNTS=""
 
 error() {
 	printf "ERROR: $@\n" 1>&2
@@ -44,23 +46,27 @@ get_lowerdir() {
 }
 
 clean_exit() {
-	local mounts="$1" rc="" d="" lowerdir=""
+	local mounts="$1" rc="" d="" lowerdir="" mp=""
 	for d in ${mounts}; do
 		if mountpoint ${d} >/dev/null; then
 			umount ${d} || rc=1
 		fi
 	done
-	get_lowerdir
-	lowerdir=${_RET}
-	if ! mount -o remount,ro "${lowerdir}"; then
-		error "Note that [${lowerdir}] is still mounted read/write"
-	fi
+	for mp in $REMOUNTS; do
+		echo "ro: $mp"
+		mount -o remount,ro "${mp}" ||
+			error "Note that [${mp}] is still mounted read/write"
+	done
 	[ "$2" = "return" ] && return ${rc} || exit "${rc}"
 }
 
 # Try to find the overlayroot filesystem
 get_lowerdir
 lowerdir=${_RET}
+
+recurse_mps=$(awk '$1 ~ /^\/dev\// && $2 ~ starts { print $2 }' \
+	starts="^$lowerdir/" /proc/mounts)
+
 mounts=
 for d in proc run sys; do
 	if ! mountpoint "${lowerdir}/${d}" >/dev/null; then
@@ -71,8 +77,12 @@ for d in proc run sys; do
 done
 
 # Remount with read/write
-mount -o remount,rw "${lowerdir}" ||
-   fail "Unable to remount [${lowerdir}] writable"
+for mp in "$lowerdir" $recurse_mps; do
+	echo "rw: $mp"
+	mount -o remount,rw "${mp}" &&
+		REMOUNTS="$mp $REMOUNTS" ||
+		fail "Unable to remount [$mp] writable"
+done
 info "Chrooting into [${lowerdir}]"
 chroot ${lowerdir} "$@"
 
