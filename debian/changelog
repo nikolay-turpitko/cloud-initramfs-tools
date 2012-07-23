@@ -1,6 +1,7 @@
 cloud-initramfs-tools (0.10) unreleased; urgency=low
 
-  * UNRELEASED
+  * debian/control:
+    - simplify the name of the binary package to just "overlayroot"
 
  -- Dustin Kirkland <kirkland@ubuntu.com>  Sat, 21 Jul 2012 11:09:00 -0500
 

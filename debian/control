@@ -35,7 +35,7 @@ Description: automatically resize the root partition on first boot
  In this case, with this package installed, you can automatically use
  the new space without requiring a reboot to re-read the partition table.
 
-Package: cloud-initramfs-overlayroot
+Package: overlayroot
 Architecture: all
 Depends: ${shlibs:Depends}, ${misc:Depends}, initramfs-tools, util-linux (>= 2.17.2), cloud-utils (>= 0.21ubuntu1), pwgen, cryptsetup, cryptsetup-bin
 Description: use an overlayfs on top of a read-only root filesystem
@@ -46,11 +46,3 @@ Description: use an overlayfs on top of a read-only root filesystem
  The changes can be written to a in-memory temporary filesystem, a
  filesystem on an existing block device, or a dmcrypt encrypted block
  device.
-
-Package: overlayroot
-Architecture: all
-Depends: ${shlibs:Depends}, ${misc:Depends}, cloud-initramfs-overlayroot
-Description: overlayfs on top of a read-only root filesystem (meta)
- This is a meta package that installs the wordier
- cloud-initramfs-overlayroot binary package.  Note at this functionality
- is not actually cloud specific.
