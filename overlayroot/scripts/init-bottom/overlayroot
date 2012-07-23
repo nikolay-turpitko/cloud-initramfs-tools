@@ -345,11 +345,16 @@ case "${overlayroot:-disabled}" in
 		exit 0;;
 esac
 
-log_warn "configuring overlayroot with mode=$mode opts='$opts' per $used_desc"
-
 parse_string "$opts" "," _RET_common_
 swap=${_RET_common_swap:-0}
 recurse=${_RET_common_recurse:-1}
+
+[ "$swap" = "0" -o "$swap" = "1" ] ||
+	fail "invalid setting for swap: $swap. must be '0' or '1'"
+[ "$recurse" = "0" -o "$recurse" = "1" ] ||
+	fail "invalid setting for recurse: $recurse. must be '0' or '1'"
+
+log_warn "configuring overlayroot with mode=$mode opts='$opts' per $used_desc"
 
 # overlayroot_driver *could* be defined in one of the configs above
 # but we're not documenting that.
