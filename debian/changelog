@@ -1,9 +1,9 @@
-cloud-initramfs-tools (0.10) unreleased; urgency=low
+cloud-initramfs-tools (0.10-0ubuntu1) quantal; urgency=low
 
   * debian/control:
     - simplify the name of the binary package to just "overlayroot"
 
- -- Dustin Kirkland <kirkland@ubuntu.com>  Sat, 21 Jul 2012 11:09:00 -0500
+ -- Dustin Kirkland <kirkland@ubuntu.com>  Mon, 23 Jul 2012 09:38:44 -0500
 
 cloud-initramfs-tools (0.9-0ubuntu1) quantal; urgency=low
 
