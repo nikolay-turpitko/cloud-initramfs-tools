@@ -347,7 +347,7 @@ esac
 
 log_warn "configuring 'overlayroot=$overlayroot' per $used_desc"
 
-parse_string "$opts" _RET_common
+parse_string "$opts" _RET_common_
 swap=${_RET_common_swap:-0}
 recurse=${_RET_common_recurse:-1}
 
