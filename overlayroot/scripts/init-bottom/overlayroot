@@ -229,6 +229,56 @@ dev_setup() {
 	_RET_DIR="$dir"
 }
 
+overlayrootify_fstab() {
+	local input="$1" root_ro="${2:-/media/root-ro}"
+	local root_rw="${3:-/media/root-rw}" dir_prefix="${4:-/}"
+	local recurse=${5:-1} swap=${6:-0}
+	local hash="#"
+	local vfstypes=" proc sys tmpfs dev udev "
+	local spec file vfstype opts pass freq line ro_line
+	[ -f "$input" ] || return 1
+	while read spec file vfstype opts pass freq; do
+		line="$spec $file $vfstype $opts $pass $freq"
+		case ",$opts," in
+			*,ro,*) ro_opts="$opts";;
+			*) ro_opts="ro,${opts}";;
+		esac
+		ro_line="$spec ${root_ro}$file $vfstype ${ro_opts} $pass $freq"
+		if [ "${spec#${hash}}" != "$spec" ] ||
+		   [ -z "$freq" ]; then
+			# line has a comment in first field, or not 6 fields
+			echo "$line"
+		elif [ "${vfstypes# *${vfstype} }" != "${vfstypes}" ]; then
+			# this is a virtual filesystem, just let it through
+			echo "${line}"
+		elif [ "$vfstype" = "swap" ]; then
+			if [ "$swap" = "0" ]; then
+				# comment out swap lines
+				echo "#overlayroot:swap=${swap}#${line}"
+			elif [ "${spec#/}" != "${spec}" ] &&
+			     [ "${spec#/dev/}" = "${spec}" ]; then
+				# comment out swap files (spec starts with / and not in /dev)
+				echo "#overlayroot:swapfile#${line}"
+			else
+				echo "${line}"
+			fi
+		else
+			if [ "$recurse" != "0" ]; then
+				echo "$ro_line"
+			else
+				echo "$line"
+			fi
+			if [ "$file" = "/" ]; then
+				# write an entry for /
+				oline="overlayroot ${file} overlayfs "
+				oline="${oline}lowerdir=${root_ro}${file},"
+				oline="${oline}upperdir=${root_ro}${file} $pass $freq"
+				echo "$oline"
+			fi
+		fi
+	done < "$input"
+}
+
 
 # collect kernel parameter value into a config file
 kern_cfg="/tmp/${0##*/}.kernel-cmdline.cfg"
@@ -261,8 +311,13 @@ for pairs in "initramfs config:/conf/conf.d/overlayroot" \
 done
 rm -f "$kern_cfg"
 
+opts=""
 case "${overlayroot:-disabled}" in
-	tmpfs) mode="tmpfs";;
+	tmpfs|tmpfs:*)
+		mode="tmpfs"
+		opts="${overlayroot#tmpfs}";
+		opts=${opts#:}
+		;;
 	/dev/*|device:*)
 		case "$overlayroot" in
 			/dev/*) opts="dev=${overlayroot}";;
@@ -274,9 +329,9 @@ case "${overlayroot:-disabled}" in
 		device="$_RET_DEVICE"
 		dir_prefix="$_RET_DIR"
 		;;
-	crypt|crypt:*)
+	crypt:*)
 		mode="crypt"
-		t=${overlayroot#crypt}
+		opts=${overlayroot#crypt:}
 		crypto_setup "${t#:}" ||
 			fail "failed setup crypt for ${overlayroot}"
 		device="$_RET_DEVICE"
@@ -291,6 +346,10 @@ case "${overlayroot:-disabled}" in
 esac
 
 log_warn "configuring 'overlayroot=$overlayroot' per $used_desc"
+
+parse_string "$opts" _RET_common
+swap=${_RET_common_swap:-0}
+recurse=${_RET_common_recurse:-1}
 
 # overlayroot_driver *could* be defined in one of the configs above
 # but we're not documenting that.
@@ -398,33 +457,22 @@ mount --move "${root_rw}" "${ROOTMNT}${root_rw}" ||
 # Remember we are still on the initramfs root fs here, so we have to work
 # on ${ROOTMNT}/etc/fstab. The original fstab is
 # ${ROOTMNT}${root_ro}/etc/fstab.
-root_type=$(awk '$1 == root { print $3 }' "root=$ROOT" /proc/mounts)
-root_options=$(awk '$1 == root { print $4 }' "root=$ROOT" /proc/mounts)
 cat <<EOF >${ROOTMNT}/etc/fstab
 #
 #  This fstab is in an overlayfs.  The real one can be found at
 #  ${root_ro}/etc/fstab
-#  The original entry for '/' and all swap files have been removed.  The new
-#  entry for the read-only the real root fs follows.  To permanently
-#  modify this (or any other file), you should change-root into a writable
-#  view of the underlying filesystem using:
+#  The original entry for '/' and other mounts have been updated to be placed
+#  under $root_ro.
+#  To permanently modify this (or any other file), you should change-root into
+#  a writable view of the underlying filesystem using:
 #      sudo overlayroot-chroot
 #
-
-${ROOT} ${root_ro} ${root_type} ${root_options} 0 0
-
-#
-#  remaining entries from the original ${root_ro}/etc/fstab follow.
-#
 EOF
-[ $? -eq 0 ] || log_fail "failed to modify /etc/fstab (step 1)"
 
-#comment out root and swap entries passing others through unmodified
-awk '{ 
-	if ($0 ~ /^#/ || ($2 != "/" && $3 != "swap") ) { print $0 }
-	else { printf("%s%s\n","#overlayroot#",$0); }
-	}' "${ROOTMNT}${root_ro}/etc/fstab" >> "${ROOTMNT}/etc/fstab" ||
-	log_fail "failed to modify etc/fstab (step 2)"
+[ $? -eq 0 ] || log_fail "failed to modify /etc/fstab (step 1)"
+overlayrootify_fstab ""${ROOTMNT}${root_ro}/etc/fstab"" "$root_ro" \
+	"$root_rw" "$dir_prefix" "$recurse" "$swap" >> "${ROOTMNT}/etc/fstab" ||
+	log_fail "failed to modify /etc/fstab (step 2)"
 
 msg="configured root with '$overlayroot' using ${overlayroot_driver} per"
 msg="$msg ${used_desc}"
