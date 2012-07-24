@@ -3,6 +3,12 @@ cloud-initramfs-tools (0.11) unreleased; urgency=low
   [ Scott Moser ]
   * debian/cloud-initramfs-overlayroot.{install,postinst,postrm}:
     rename so dh gets the right packaged files
+  * overlayroot/etc/overlayroot.conf,
+    overlayroot/scripts/init-bottom/overlayroot:
+    * add recursive readonly mounts.  Enable this by default.
+    * add parameter 'swap' to control if swap is to be enabled.
+      swap defaults to disabled.
+    
 
  -- Dustin Kirkland <kirkland@ubuntu.com>  Mon, 23 Jul 2012 09:38:46 -0500
 
