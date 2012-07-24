@@ -9,7 +9,7 @@ Vcs-Bzr: http://code.launchpad.net/~cloud-initramfs-tools/cloud-initramfs-tools/
 
 Package: cloud-initramfs-rescuevol
 Architecture: all
-Depends: ${shlibs:Depends}, ${misc:Depends}, initramfs-tools
+Depends: initramfs-tools, ${misc:Depends}, ${shlibs:Depends}
 Description: boot off a rescue volume rather than root filesystem
  This package adds functionality to an initramfs built by initramfs-tools.
  When installed the initramfs will check to see if any partitions
@@ -23,7 +23,11 @@ Description: boot off a rescue volume rather than root filesystem
 
 Package: cloud-initramfs-growroot
 Architecture: all
-Depends: ${shlibs:Depends}, ${misc:Depends}, initramfs-tools, util-linux (>= 2.17.2), cloud-utils (>= 0.21ubuntu1)
+Depends: cloud-utils (>= 0.21ubuntu1),
+         initramfs-tools,
+         util-linux (>= 2.17.2),
+         ${misc:Depends},
+         ${shlibs:Depends}
 Description: automatically resize the root partition on first boot
  This package adds functionality to an initramfs built by initramfs-tools.
  When installed, the initramfs will repartition a disk to make the
@@ -37,10 +41,17 @@ Description: automatically resize the root partition on first boot
 
 Package: overlayroot
 Architecture: all
-Depends: ${shlibs:Depends}, ${misc:Depends}, initramfs-tools, util-linux (>= 2.17.2), cloud-utils (>= 0.21ubuntu1), pwgen, cryptsetup, cryptsetup-bin
+Depends: cloud-utils (>= 0.21ubuntu1),
+         cryptsetup,
+         cryptsetup-bin,
+         initramfs-tools,
+         pwgen,
+         util-linux (>= 2.17.2),
+         ${misc:Depends},
+         ${shlibs:Depends}
 Description: use an overlayfs on top of a read-only root filesystem
  This package adds functionality to an initramfs built by initramfs-tools.
- When installed and configured, the initramfs will mount an overlayfs 
+ When installed and configured, the initramfs will mount an overlayfs
  filesystem on top of a read-only root volume.
  .
  The changes can be written to a in-memory temporary filesystem, a
