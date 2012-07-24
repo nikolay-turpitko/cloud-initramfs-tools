@@ -150,13 +150,12 @@ crypto_setup() {
 	[ -n "$dev" ] ||
 		{ log_fail "dev= argument not provided in '${options}'"; return 1; }
 
-	dev="/dev/${dev#/dev/}"
+	short2dev "$dev" ||
+		{ log_fail "failed to convert $dev to a device"; return 1; }
+	dev="${_RET}"
 
 	debug "fstype=${fstype} pass=${pass} mapname=${mapname}"
 	debug "mkfs=${mkfs} dev=${dev} timeout=${timeout} dir=${dir}"
-
-	[ -n "$dev" ] ||
-		{ log_fail "dev is required input for crypt setup"; return 1; }
 
 	wait_for_dev "$dev" "$timeout" || {
 		log_fail "crypt dev device $dev does not exist after ${timeout}s";
@@ -220,7 +219,9 @@ dev_setup() {
 	[ -n "$dev" ] ||
 		{ log_fail "dev= argument not provided in '${options}'"; return 1; }
 
-	dev="/dev/${dev#/dev/}"
+	short2dev "$dev" ||
+		{ log_fail "failed to convert $dev to a device"; return 1; }
+	dev="${_RET}"
 
 	debug "dev=${dev} timeout=${timeout} dir=${dir}"
 
@@ -277,6 +278,25 @@ overlayrootify_fstab() {
 			fi
 		fi
 	done < "$input"
+}
+
+short2dev() {
+	# turn 'LABEL=' or 'UUID=' into a device path
+	# also support /dev/* and 'vdb' or 'xvda'
+	local input="$1" oifs="$IFS" dev newdev s
+	case "$input" in
+		LABEL=*)
+			dev="${input#LABEL=}"
+			case "${dev}" in
+				*/*) dev="$(echo "${dev}" | sed 's,/,\\x2f,g')";;
+			esac
+			dev="/dev/disk/by-label/${dev}"
+			;;
+		UUID=*) dev="/dev/disk/by-uuid/${input#UUID=}" ;;
+		/dev/*) dev="${input}";;
+		*) dev="/dev/${input}";;
+	esac
+	_RET=$dev
 }
 
 
