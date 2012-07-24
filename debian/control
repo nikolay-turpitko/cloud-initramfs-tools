@@ -41,12 +41,10 @@ Description: automatically resize the root partition on first boot
 
 Package: overlayroot
 Architecture: all
-Depends: cloud-utils (>= 0.21ubuntu1),
-         cryptsetup,
+Depends: cryptsetup,
          cryptsetup-bin,
          initramfs-tools,
          pwgen,
-         util-linux (>= 2.17.2),
          ${misc:Depends},
          ${shlibs:Depends}
 Description: use an overlayfs on top of a read-only root filesystem

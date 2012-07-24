@@ -9,6 +9,8 @@ cloud-initramfs-tools (0.11) unreleased; urgency=low
     * add parameter 'swap' to control if swap is to be enabled.
       swap defaults to disabled.
     * add support for identifying device by LABEL= or UUID=
+  * debian/control:
+    * remove overlayfs dependency on cloud-utils and util-linux
 
  -- Dustin Kirkland <kirkland@ubuntu.com>  Mon, 23 Jul 2012 09:38:46 -0500
 
