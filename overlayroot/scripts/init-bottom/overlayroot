@@ -240,6 +240,9 @@ overlayrootify_fstab() {
 	local hash="#" oline="" ospec="" upper="" dirs="" copy_opts=""
 	local vfstypes=" proc sys tmpfs dev udev "
 	local spec file vfstype opts pass freq line ro_line
+	
+	dir_prefix="${dir_prefix#/}"
+
 	[ -f "$input" ] || return 1
 	while read spec file vfstype opts pass freq; do
 		line="$spec $file $vfstype $opts $pass $freq"
@@ -271,7 +274,7 @@ overlayrootify_fstab() {
 			copy_opts=""
 			[ "${opts#*nobootwait*}" != "${opts}" ] &&
 				copy_opts=",nobootwait"
-			upper=${root_rw%/}${file%/}/${dir_prefix#/}
+			upper="${root_rw%/}/${dir_prefix%/}${file%/}"
 			oline="${ospec} ${file} overlayfs "
 			oline="${oline}lowerdir=${root_ro}${file},"
 			oline="${oline}upperdir=${upper}${copy_opts} $pass $freq"
