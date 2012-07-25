@@ -44,7 +44,7 @@ ROOTMNT=${rootmnt} # use global name to indicate created outside this
 OVERLAYROOT_DEBUG=0
 
 log() {
-	"log_${1}_msg" "$MYTAG:" "$2";
+	"log_${1}_msg" "$MYTAG: $2";
 	_debug "[$1]:" "$2"
 }
 log_fail() { log failure "$*"; }
