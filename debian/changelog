@@ -1,4 +1,4 @@
-cloud-initramfs-tools (0.11) unreleased; urgency=low
+cloud-initramfs-tools (0.11-0ubuntu1) quantal; urgency=low
 
   [ Scott Moser ]
   * debian/cloud-initramfs-overlayroot.{install,postinst,postrm}:
@@ -12,7 +12,7 @@ cloud-initramfs-tools (0.11) unreleased; urgency=low
   * debian/control:
     * remove overlayfs dependency on cloud-utils and util-linux
 
- -- Dustin Kirkland <kirkland@ubuntu.com>  Mon, 23 Jul 2012 09:38:46 -0500
+ -- Dustin Kirkland <kirkland@ubuntu.com>  Tue, 24 Jul 2012 20:05:33 -0500
 
 cloud-initramfs-tools (0.10-0ubuntu1) quantal; urgency=low
 
