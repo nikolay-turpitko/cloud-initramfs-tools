@@ -231,10 +231,13 @@ dev_setup() {
 }
 
 overlayrootify_fstab() {
+	# overlayrootify_fstab(input, root_ro, root_rw, dir_prefix, recurse, swap)
+	# read input fstab file, write an overlayroot version to stdout
+	# also returns (_RET) a list of directories that will need to be made
 	local input="$1" root_ro="${2:-/media/root-ro}"
 	local root_rw="${3:-/media/root-rw}" dir_prefix="${4:-/}"
 	local recurse=${5:-1} swap=${6:-0}
-	local hash="#"
+	local hash="#" oline="" ospec="" upper="" dirs="" copy_opts=""
 	local vfstypes=" proc sys tmpfs dev udev "
 	local spec file vfstype opts pass freq line ro_line
 	[ -f "$input" ] || return 1
@@ -264,20 +267,26 @@ overlayrootify_fstab() {
 				echo "${line}"
 			fi
 		else
+			ospec="${root_ro}${file}"
+			copy_opts=""
+			[ "${opts#*nobootwait*}" != "${opts}" ] &&
+				copy_opts=",nobootwait"
+			upper=${root_rw%/}${file%/}/${dir_prefix#/}
+			oline="${ospec} ${file} overlayfs "
+			oline="${oline}lowerdir=${root_ro}${file},"
+			oline="${oline}upperdir=${upper}${copy_opts} $pass $freq"
+
 			if [ "$recurse" != "0" ]; then
 				echo "$ro_line"
+				echo "$oline"
+				dirs="${dirs} ${upper}"
 			else
 				echo "$line"
-			fi
-			if [ "$file" = "/" ]; then
-				# write an entry for /
-				oline="overlayroot ${file} overlayfs "
-				oline="${oline}lowerdir=${root_ro}${file},"
-				oline="${oline}upperdir=${root_ro}${file} $pass $freq"
-				echo "$oline"
+				[ "$file" = "/" ] && dirs="${dirs} ${upper}"
 			fi
 		fi
 	done < "$input"
+	_RET=${dirs# }
 }
 
 short2dev() {
@@ -498,6 +507,12 @@ EOF
 overlayrootify_fstab ""${ROOTMNT}${root_ro}/etc/fstab"" "$root_ro" \
 	"$root_rw" "$dir_prefix" "$recurse" "$swap" >> "${ROOTMNT}/etc/fstab" ||
 	log_fail "failed to modify /etc/fstab (step 2)"
+
+# we have to make the directories in ${root_rw} because if they do not
+# exist, then the 'upper=' argument to overlayfs will fail.
+for d in ${_RET}; do
+	mkdir -p "${ROOTMNT}/$d"
+done
 
 msg="configured root with '$overlayroot' using ${overlayroot_driver} per"
 msg="$msg ${used_desc}"
