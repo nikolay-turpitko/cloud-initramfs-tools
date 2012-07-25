@@ -374,7 +374,7 @@ parse_string "$opts" "," _RET_common_
 swap=${_RET_common_swap:-0}
 recurse=${_RET_common_recurse:-1}
 OVERLAYROOT_DEBUG=${_RET_common_debug:-${OVERLAYROOT_DEBUG}}
-dir_prefix=${_RET_common_dir:-"/"}
+dir_prefix=${_RET_common_dir:-"/overlay"}
 
 debug "swap=$swap recurse=$recurse debug=$OVERLAYROOT_DEBUG dir=$dir_prefix"
 debug "device=$device mode=$mode"
