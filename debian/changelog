@@ -1,6 +1,8 @@
 cloud-initramfs-tools (0.12) unreleased; urgency=low
 
-  * fix recursive overlay mounts
+  * overlayroot:
+    * fix recursive mounts
+    * add debug= parameter
 
  -- Scott Moser <smoser@ubuntu.com>  Wed, 25 Jul 2012 10:28:37 -0400
 
