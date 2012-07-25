@@ -380,6 +380,7 @@ esac
 parse_string "$opts" "," _RET_common_
 swap=${_RET_common_swap:-0}
 recurse=${_RET_common_recurse:-1}
+OVERLAYROOT_DEBUG=${_RET_common_debug:-${OVERLAYROOT_DEBUG}}
 
 [ "$swap" = "0" -o "$swap" = "1" ] ||
 	fail "invalid setting for swap: $swap. must be '0' or '1'"
