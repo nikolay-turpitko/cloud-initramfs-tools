@@ -125,7 +125,7 @@ wait_for_dev() {
 }
 crypto_setup() {
 	local fstype="ext4" pass="" mapname="secure" mkfs="1" dev=""
-	local timeout=0 dir="/"
+	local timeout=0
 	# this does necessary crypto setup and sets _RET
 	# to the appropriate block device (ie /dev/mapper/secure)
 
@@ -145,7 +145,6 @@ crypto_setup() {
 	mkfs=${_RET_mkfs:-${mkfs}}
 	dev=${_RET_dev:-${dev}}
 	timeout=${_RET_timeout:-${timeout}}
-	dir=${_RET_dir:-${dir}}
 
 	[ -n "$dev" ] ||
 		{ log_fail "dev= argument not provided in '${options}'"; return 1; }
@@ -155,7 +154,7 @@ crypto_setup() {
 	dev="${_RET}"
 
 	debug "fstype=${fstype} pass=${pass} mapname=${mapname}"
-	debug "mkfs=${mkfs} dev=${dev} timeout=${timeout} dir=${dir}"
+	debug "mkfs=${mkfs} dev=${dev} timeout=${timeout}"
 
 	wait_for_dev "$dev" "$timeout" || {
 		log_fail "crypt dev device $dev does not exist after ${timeout}s";
@@ -171,7 +170,6 @@ crypto_setup() {
 			wait_for_dev "$tdev" 20 ||
 				{ log_fail "$tdev did not appear"; return 1; }
 			_RET_DEVICE="/dev/mapper/$mapname"
-			_RET_DIR="$dir"
 			return 0
 		fi
 		if [ "$mkfs" != "1" ]; then
@@ -201,7 +199,6 @@ crypto_setup() {
 	}
 
 	_RET_DEVICE="/dev/mapper/$mapname"
-	_RET_DIR="$dir"
 	return 0
 }
 
@@ -214,7 +211,6 @@ dev_setup() {
 
 	dev=${_RET_dev:-${dev}}
 	timeout=${_RET_timeout:-${timeout}}
-	dir=${_RET_dir:-${dir}}
 
 	[ -n "$dev" ] ||
 		{ log_fail "dev= argument not provided in '${options}'"; return 1; }
@@ -223,11 +219,10 @@ dev_setup() {
 		{ log_fail "failed to convert $dev to a device"; return 1; }
 	dev="${_RET}"
 
-	debug "dev=${dev} timeout=${timeout} dir=${dir}"
+	debug "dev=${dev} timeout=${timeout}"
 
 	wait_for_dev "$dev" "$timeout"
 	_RET_DEVICE="$dev"
-	_RET_DIR="$dir"
 }
 
 overlayrootify_fstab() {
@@ -359,7 +354,6 @@ case "${overlayroot:-disabled}" in
 			fail "failed setup overlay for ${overlayroot} [$opts]"
 		mode="device"
 		device="$_RET_DEVICE"
-		dir_prefix="$_RET_DIR"
 		;;
 	crypt:*)
 		mode="crypt"
@@ -367,7 +361,6 @@ case "${overlayroot:-disabled}" in
 		crypto_setup "${t#:}" ||
 			fail "failed setup crypt for ${overlayroot}"
 		device="$_RET_DEVICE"
-		dir_prefix="$_RET_DIR"
 		;;
 	disabled)
 		debug "overlayroot disabled${used_desc:+ per ${used_desc}}"
@@ -381,6 +374,10 @@ parse_string "$opts" "," _RET_common_
 swap=${_RET_common_swap:-0}
 recurse=${_RET_common_recurse:-1}
 OVERLAYROOT_DEBUG=${_RET_common_debug:-${OVERLAYROOT_DEBUG}}
+dir_prefix=${_RET_common_dir:-"/"}
+
+debug "swap=$swap recurse=$recurse debug=$OVERLAYROOT_DEBUG dir=$dir_prefix"
+debug "device=$device mode=$mode"
 
 [ "$swap" = "0" -o "$swap" = "1" ] ||
 	fail "invalid setting for swap: $swap. must be '0' or '1'"
@@ -431,9 +428,10 @@ else
 	# dev or crypto
 	mount "$device" "${root_rw}" ||
 		fail "failed mount backing device $device"
-	mkdir -p "${root_rw}/${dir_prefix}" ||
-		fail "failed to create ${dir_prefix} on ${device}"
 fi
+
+mkdir -p "${root_rw}/${dir_prefix}" ||
+	fail "failed to create ${dir_prefix} on ${device}"
 
 # root is mounted on ${ROOTMNT}, move it to ${ROOT_RO}.
 mount --move "${ROOTMNT}" "${root_ro}" ||
