@@ -358,7 +358,7 @@ case "${overlayroot:-disabled}" in
 	crypt:*)
 		mode="crypt"
 		opts=${overlayroot#crypt:}
-		crypto_setup "${t#:}" ||
+		crypto_setup "${opts#:}" ||
 			fail "failed setup crypt for ${overlayroot}"
 		device="$_RET_DEVICE"
 		;;
