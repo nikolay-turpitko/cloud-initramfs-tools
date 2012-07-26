@@ -1,11 +1,12 @@
-cloud-initramfs-tools (0.12) unreleased; urgency=low
+cloud-initramfs-tools (0.12-0ubuntu1) quantal; urgency=low
 
+  [ Scott Moser ]
   * overlayroot:
     * fix recursive mounts
     * add debug= parameter
     * make dir= a valid parameter for overlayroot=tmpfs
 
- -- Scott Moser <smoser@ubuntu.com>  Wed, 25 Jul 2012 10:28:37 -0400
+ -- Dustin Kirkland <kirkland@ubuntu.com>  Thu, 26 Jul 2012 17:09:20 -0500
 
 cloud-initramfs-tools (0.11-0ubuntu1) quantal; urgency=low
 
