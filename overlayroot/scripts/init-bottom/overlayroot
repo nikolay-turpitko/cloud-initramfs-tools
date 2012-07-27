@@ -182,6 +182,8 @@ crypto_setup() {
 			{ log_fail "mkfs=0, but no password provided"; return 1; }
 		pass=$(pwgen -s 80) ||
 			{ log_fail "failed generation of password"; return 1; }
+		printf "%s" "${pass}" > "/dev/.initramfs/.${MYTAG}.pass"
+		chmod 400 "/dev/.initramfs/.${MYTAG}.pass"
 	fi
 
 	log_warn "setting up new luks device at $dev"

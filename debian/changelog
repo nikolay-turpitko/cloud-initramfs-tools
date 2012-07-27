@@ -1,6 +1,7 @@
 cloud-initramfs-tools (0.13) unreleased; urgency=low
 
-  * UNRELEASED
+  * overlayroot/scripts/init-bottom/overlayroot:
+    - stash generated password in tmpfs in /dev/.initramfs
 
  -- Dustin Kirkland <kirkland@ubuntu.com>  Thu, 26 Jul 2012 17:09:23 -0500
 
