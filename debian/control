@@ -44,7 +44,6 @@ Architecture: all
 Depends: cryptsetup,
          cryptsetup-bin,
          initramfs-tools,
-         pwgen,
          ${misc:Depends},
          ${shlibs:Depends}
 Description: use an overlayfs on top of a read-only root filesystem

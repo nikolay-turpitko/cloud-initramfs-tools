@@ -9,7 +9,9 @@ esac
 . /usr/share/initramfs-tools/hook-functions
 
 ##
-copy_exec /usr/bin/pwgen /bin
+copy_exec /usr/bin/head /bin
+copy_exec /usr/bin/sha512sum /bin
+copy_exec /bin/mktemp /bin
 copy_exec /sbin/wipefs /sbin
 copy_exec /sbin/cryptsetup /sbin
 copy_exec /sbin/mke2fs /sbin

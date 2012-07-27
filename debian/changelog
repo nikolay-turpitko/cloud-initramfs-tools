@@ -2,6 +2,15 @@ cloud-initramfs-tools (0.13) unreleased; urgency=low
 
   * overlayroot/scripts/init-bottom/overlayroot:
     - stash generated password in tmpfs in /dev/.initramfs
+  * debian/control, overlayroot/etc/overlayroot.conf,
+    overlayroot/hooks/overlayroot, overlayroot/scripts/init-
+    bottom/overlayroot:
+    - drop pwgen dependency
+    - use a new algorithm for generating cryptsetup passphrase
+    - document that in the config file
+    - need a few new executables in ramfs (head, sha512sum, mktemp)
+    - write the randomly generated cryptsetup passphrase to a
+      root-only-readable file in tmpfs
 
  -- Dustin Kirkland <kirkland@ubuntu.com>  Thu, 26 Jul 2012 17:09:23 -0500
 
