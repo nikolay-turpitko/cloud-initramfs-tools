@@ -11,6 +11,13 @@ cloud-initramfs-tools (0.13) unreleased; urgency=low
     - need a few new executables in ramfs (head, sha512sum, mktemp)
     - write the randomly generated cryptsetup passphrase to a
       root-only-readable file in tmpfs
+  * debian/control, overlayroot/hooks/overlayroot,
+    overlayroot/scripts/init-bottom/overlayroot:
+    - depend on haveged for additional entropy
+    - grab up to 4KB of entropy from /dev/random and stash it into
+      a seed in the initramfs
+    - load the initramfs seed and the urandom boot seed into urandom
+      (borrowed from the /etc/init.d/urandom script)
 
  -- Dustin Kirkland <kirkland@ubuntu.com>  Thu, 26 Jul 2012 17:09:23 -0500
 

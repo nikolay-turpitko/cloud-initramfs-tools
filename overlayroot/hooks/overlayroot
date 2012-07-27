@@ -21,4 +21,8 @@ manual_add_modules dm_mod
 manual_add_modules dm_crypt
 egrep -qswo "aes" /proc/cpuinfo && manual_add_modules aesni_intel || true
 
+# Grab as much true random data as possible, up to 4KB, and stash it into a
+# random seed in the initramfs
+dd if=/dev/random of="${DESTDIR}/.random-seed" bs=1 count=4096 iflag=nonblock >/dev/null 2>&1 || true
+
 # vi: ts=4 noexpandtab

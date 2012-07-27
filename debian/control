@@ -43,6 +43,7 @@ Package: overlayroot
 Architecture: all
 Depends: cryptsetup,
          cryptsetup-bin,
+         haveged,
          initramfs-tools,
          ${misc:Depends},
          ${shlibs:Depends}
