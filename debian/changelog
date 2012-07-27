@@ -1,4 +1,4 @@
-cloud-initramfs-tools (0.13) unreleased; urgency=low
+cloud-initramfs-tools (0.13-0ubuntu1) quantal; urgency=low
 
   * overlayroot/scripts/init-bottom/overlayroot:
     - stash generated password in tmpfs in /dev/.initramfs
@@ -19,7 +19,7 @@ cloud-initramfs-tools (0.13) unreleased; urgency=low
     - load the initramfs seed and the urandom boot seed into urandom
       (borrowed from the /etc/init.d/urandom script)
 
- -- Dustin Kirkland <kirkland@ubuntu.com>  Thu, 26 Jul 2012 17:09:23 -0500
+ -- Dustin Kirkland <kirkland@ubuntu.com>  Fri, 27 Jul 2012 14:57:42 -0500
 
 cloud-initramfs-tools (0.12-0ubuntu1) quantal; urgency=low
 
