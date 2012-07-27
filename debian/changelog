@@ -2,6 +2,8 @@ cloud-initramfs-tools (0.14) unreleased; urgency=low
 
   * overlayroot/etc/overlayroot.conf:
     - fix name of password file
+  * overlayroot/hooks/overlayroot:
+    - mktemp is already in busybox
 
  -- Dustin Kirkland <kirkland@ubuntu.com>  Fri, 27 Jul 2012 14:57:44 -0500
 
