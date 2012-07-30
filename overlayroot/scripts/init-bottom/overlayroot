@@ -320,11 +320,47 @@ short2dev() {
 	_RET=$dev
 }
 
+get_cfg() {
+	local dev="$1" file="$2" cfg="${3:-overlayroot.conf}" timeout="${4:-0}"
+	local cfgdev="" success=0 didmnt=false mp="" pre="get_cfg($dev):"
+	[ -z "$dev" ] && return 1
+
+	if [ "$timeout" != "0" ]; then
+		wait_for_dev "$dev" "$timeout" ||
+			{ debug "$pre did not appear in $timeout"; return 1; }
+	else
+		udevadm settle
+	fi
+
+	short2dev "$dev" && cfgdev="$_RET" && [ -b "$cfgdev" ] ||
+		{ debug "$pre not present"; return 1; }
+
+	if mp="/tmp/${0##*/}.mp" && mkdir "$mp" &&
+		mount -o ro "$cfgdev" "$mp"; then
+		if [ -f "$mp/$cfg" ]; then
+			cp "$mp/$cfg" "$file" && success=1 ||
+				debug "$pre copy failed"
+		else
+			debug "$pre '$file' file not found"
+		fi
+		umount "$mp"
+	else
+		debug "$pre mount failed"
+	fi
+	rmdir "$mp"
+	[ $success -eq 1 ] || return 1
+	_RET="$dev/$cfg:${file}"
+}
+
 
 # collect kernel parameter value into a config file
 kern_cfg="/tmp/${0##*/}.kernel-cmdline.cfg"
 get_kernel_cmdline || fail "failed to read kernel command line!"
 [ -n "$_RET" ] && echo "overlayroot=${_RET}" > "$kern_cfg"
+
+# check to see if there is a disk giving us some config
+get_cfg "LABEL=OROOTCFG" "/tmp/${0##*/}.orootcfg.cfg" "overlayroot.conf" &&
+	orootcfg_pair="$_RET" || orootcfg_pair=""
 
 overlayroot=""
 prev_desc=""
@@ -332,11 +368,12 @@ prev_file=""
 prev_val=""
 # each of these config locations gets an opportunity to override
 # previous declaration.
-for pairs in "initramfs config:/conf/conf.d/overlayroot" \
+for pair in "initramfs config:/conf/conf.d/overlayroot" \
 	"$ROOT/etc/overlayroot.conf:${ROOTMNT}/etc/overlayroot.conf" \
-	"kernel cmdline:$kern_cfg"; do
-	cur_desc=${pairs%%:*}
-	cur_file=${pairs#${cur_desc}:}
+	"$orootcfg_pair" "kernel cmdline:$kern_cfg"; do
+	[ -n "$pair" ] || continue
+	cur_desc=${pair%%:*}
+	cur_file=${pair#${cur_desc}:}
 	[ -f "$cur_file" ] || continue
 	set -f; . "$cur_file"; set +f
 	if [ "$prev_val" != "$overlayroot" ]; then
