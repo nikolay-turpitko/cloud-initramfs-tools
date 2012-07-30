@@ -571,8 +571,11 @@ done
 # then mount our overlayfs as read-only just to be more normal
 read cmdline < /proc/cmdline
 cmdline=" $cmdline "
-[ "${cmdline#* ro }" != "$cmdline" ] || mount -o remount,ro "$ROOTMNT" ||
-	log_fail "failed to remount overlayroot read-only"
+if [ "${cmdline#* ro }" != "$cmdline" ]; then
+	mount -o remount,ro "$ROOTMNT" ||
+		log_fail "failed to remount overlayroot read-only"
+	debug "mounted $ROOTMNT read-only per kernel cmdline"
+fi
 
 msg="configured root with '$overlayroot' using ${overlayroot_driver} per"
 msg="$msg ${used_desc}"
