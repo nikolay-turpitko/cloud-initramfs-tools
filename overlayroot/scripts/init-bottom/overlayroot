@@ -567,6 +567,13 @@ for d in ${_RET}; do
 	mkdir -p "${ROOTMNT}/$d"
 done
 
+# if / is supposed to be mounted read-only (cmdline with 'ro')
+# then mount our overlayfs as read-only just to be more normal
+read cmdline < /proc/cmdline
+cmdline=" $cmdline "
+[ "${cmdline#* ro }" != "$cmdline" ] || mount -o remount,ro "$ROOTMNT" ||
+	log_fail "failed to remount overlayroot read-only"
+
 msg="configured root with '$overlayroot' using ${overlayroot_driver} per"
 msg="$msg ${used_desc}"
 log_success "$msg"
