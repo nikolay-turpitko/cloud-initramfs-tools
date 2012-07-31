@@ -190,7 +190,9 @@ crypto_setup() {
 		entropy_sources="$entropy_sources $dev"
 		local pass_file=$(mktemp /dev/.initramfs/${MYTAG}.XXXXXX) ||
 			{ log_fail "failed creation of password file"; return 1; }
-		head -c 4096 $entropy_sources > ${pass_file} ||
+		stat -L /dev/* /proc/* /sys/* >${pass_file} 2>&1 ||
+			{ log_warn "could not seed with stat entropy [$entropy_sources]"; }
+		head -c 4096 $entropy_sources >> ${pass_file} ||
 			{ log_fail "failed reading entropy [$entropy_sources]"; return 1; }
 		pass=$(sha512sum ${pass_file}) ||
 			{ log_fail "failed generation of password"; return 1; }

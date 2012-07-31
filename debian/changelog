@@ -1,6 +1,10 @@
 cloud-initramfs-tools (0.15) unreleased; urgency=low
 
-  * UNRELEASED
+  * overlayroot/etc/overlayroot.conf, overlayroot/scripts/init-
+    bottom/overlayroot:
+    - add a bit more unpredictability/entropy to our key generation
+    - use the stat output of all of /dev/* /proc/* /sys/*
+    - document that
 
  -- Dustin Kirkland <kirkland@ubuntu.com>  Tue, 31 Jul 2012 11:00:17 -0500
 
