@@ -43,10 +43,10 @@ Package: overlayroot
 Architecture: all
 Depends: cryptsetup,
          cryptsetup-bin,
-         haveged,
          initramfs-tools,
          ${misc:Depends},
          ${shlibs:Depends}
+Suggests: haveged
 Description: use an overlayfs on top of a read-only root filesystem
  This package adds functionality to an initramfs built by initramfs-tools.
  When installed and configured, the initramfs will mount an overlayfs
