@@ -1,4 +1,4 @@
-cloud-initramfs-tools (0.14) unreleased; urgency=low
+cloud-initramfs-tools (0.14-0ubuntu1) quantal; urgency=low
 
   [ Scott Moser ]
   * overlayroot/etc/overlayroot.conf:
@@ -10,7 +10,7 @@ cloud-initramfs-tools (0.14) unreleased; urgency=low
   * debian/control:
     - lower haveged to a suggests, until its MIR is approved
 
- -- Dustin Kirkland <kirkland@ubuntu.com>  Fri, 27 Jul 2012 14:57:44 -0500
+ -- Dustin Kirkland <kirkland@ubuntu.com>  Tue, 31 Jul 2012 11:00:15 -0500
 
 cloud-initramfs-tools (0.13-0ubuntu1) quantal; urgency=low
 
