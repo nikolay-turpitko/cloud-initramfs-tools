@@ -1,9 +1,9 @@
-cloud-initramfs-tools (0.16) unreleased; urgency=low
+cloud-initramfs-tools (0.16-0ubuntu1) quantal; urgency=low
 
   * overlayroot/scripts/init-bottom/overlayroot:
     - lower missing rng seed to a debug
 
- -- Dustin Kirkland <kirkland@ubuntu.com>  Tue, 31 Jul 2012 16:45:12 -0500
+ -- Dustin Kirkland <kirkland@ubuntu.com>  Wed, 01 Aug 2012 11:36:25 -0500
 
 cloud-initramfs-tools (0.15-0ubuntu1) quantal; urgency=low
 
