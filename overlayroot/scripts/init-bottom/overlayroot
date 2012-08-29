@@ -382,6 +382,7 @@ parse_cfg() {
 	# known issues:
 	# * sourced file could re-define 'echo'
 	# * just fails if a value has a ' in it 
+	[ -f "$1" ] || return 0
 	tick="'" sh -c '
 		__tick=$tick
 		__file=$1; __desc=$2;
