@@ -413,16 +413,18 @@ parse_cfg() {
 readcfgd() {
 	local cfg_d="$1"
 	# this kind of stinks, each VARIABLE goes into global scope
-	set +f
 	local or="" or_cfgdisk=""
 	_RET_desc_oroot=""
 	_RET_desc_cfgdisk=""
+	set +f
 	for f in "${cfg_d}"/*; do
 		. "$f" || fail "failed reading $f"
-		[ "$or" = "${overlayroot}" ] &&
+		[ "$or" != "${overlayroot}" ] &&
 			_RET_desc_oroot="$desc"
-		[ "${or_cfgdisk}" = "${overlayroot_cfgdisk}" ] &&
+		[ "${or_cfgdisk}" != "${overlayroot_cfgdisk}" ] &&
 			_RET_desc_cfgdisk="$desc"
+		or=${overlayroot}
+		or_cfgdisk=${overlayroot_cfgdisk}
 	done
 	set -f
 }
@@ -485,6 +487,7 @@ if [ "${overlayroot_cfgdisk:-disabled}" != "disabled" ] &&
 fi
 
 opts=""
+cfgmsg="${used_desc:+ (per ${used_desc})}"
 case "${overlayroot:-disabled}" in
 	tmpfs|tmpfs:*)
 		mode="tmpfs"
@@ -497,7 +500,7 @@ case "${overlayroot:-disabled}" in
 			*) opts="${overlayroot#device:}";;
 		esac
 		dev_setup "${opts}" ||
-			fail "failed setup overlay for ${overlayroot} [$opts]"
+			fail "failed setup overlay for ${overlayroot} [$opts]${cfgmsg}"
 		mode="device"
 		device="$_RET_DEVICE"
 		;;
@@ -505,14 +508,14 @@ case "${overlayroot:-disabled}" in
 		mode="crypt"
 		opts=${overlayroot#crypt:}
 		crypto_setup "${opts}" ||
-			fail "failed setup crypt for ${overlayroot}"
+			fail "failed setup crypt for ${overlayroot}${cfgmsg}"
 		device="$_RET_DEVICE"
 		;;
 	disabled)
-		debug "overlayroot disabled${used_desc:+ per ${used_desc}}"
+		debug "overlayroot disabled${cfgmsg}"
 		exit 0;;
 	*)
-		fail "invalid value for overlayroot: $overlayroot";
+		fail "invalid value for overlayroot: ${overlayroot}${cfgmsg}"
 		exit 0;;
 esac
 
