@@ -1,8 +1,10 @@
-cloud-initramfs-tools (0.17) unreleased; urgency=low
+cloud-initramfs-tools (0.17-0ubuntu1) unreleased; urgency=low
 
-  * UNRELEASED
+  * disable searching for config disk by default (LP: #1034116)
+  * make config disk device configurable
+  * support reading /etc/overlayroot.local.conf for local configuration
 
- -- Dustin Kirkland <kirkland@ubuntu.com>  Wed, 01 Aug 2012 11:36:27 -0500
+ -- Scott Moser <smoser@ubuntu.com>  Tue, 28 Aug 2012 22:00:25 -0400
 
 cloud-initramfs-tools (0.16-0ubuntu1) quantal; urgency=low
 

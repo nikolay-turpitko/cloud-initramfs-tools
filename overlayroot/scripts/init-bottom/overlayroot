@@ -34,6 +34,10 @@ esac
 
 PATH=/usr/sbin:/usr/bin:/sbin:/bin
 MYTAG="overlayroot"
+
+TEMP_D="${TMPDIR:-/tmp}/${0##*/}.configs"
+VARIABLES="overlayroot overlayroot_cfgdisk"
+
 # generic settings 
 # ${ROOT} and ${rootmnt} are predefined by caller of this script. Note that
 # the root fs ${rootmnt} it mounted readonly on the initrams, which fits
@@ -53,6 +57,9 @@ log_warn() { log warning "$*"; }
 fail() {
 	[ $# -eq 0 ] || log_fail "$@";
 	exit 0; # why do we exit success?
+}
+cleanup() {
+	[ -d "${TEMP_D}" ] && rm -Rf "${TEMP_D}"
 }
 debug() {
 	_debug "$@"
@@ -102,20 +109,30 @@ parse_string() {
 	return
 }
 get_varval() { eval _RET='${'$1'}'; }
-get_kernel_cmdline() {
-	local cmdline="" val=""
+write_kernel_cmdline_cfg() {
+	local cfg="$1" desc="${2:-kernel cmdline}"
+	local cmdline="" var=""
 	read cmdline < /proc/cmdline || return 1
+	: > "${cfg}" || return
 	set -f
+	{
+	echo "desc='${desc}'"
 	for tok in $cmdline; do
-		case "$tok" in
-			overlayroot=) val="disabled";;
-			overlayroot=*) val="${tok#overlayroot=}";;
-			overlayroot*)
-				log_warn "strange kernel param 'overlayroot' without '='";;
-		esac
+		for var in $VARIABLES; do
+			if [ "$tok" = "$var" ]; then
+				log_warn "kernel param without value '${tok}'";
+				continue;
+			elif [ "${tok}" = "${var}=" ]; then
+				echo "${var}=''";
+			elif [ "${tok#${var}=}" != "${tok}" ]; then
+				echo "${var}='${tok#${var}=}'"
+			fi
+		done
 	done
-	_RET="$val"
+	} >> "$cfg"
+	set +f
 }
+
 wait_for_dev() {
 	local dev="$1" timeout="${2:-0}"
 	[ -b "$dev" ] && return 0
@@ -323,6 +340,9 @@ short2dev() {
 }
 
 get_cfg() {
+	# get_cfg(device, file, cfg, timeout=0)
+	# copy the file $cfg off $device to $file, waiting $timeout for
+	# $device to appear
 	local dev="$1" file="$2" cfg="${3:-overlayroot.conf}" timeout="${4:-0}"
 	local cfgdev="" success=0 didmnt=false mp="" pre="get_cfg($dev):"
 	[ -z "$dev" ] && return 1
@@ -337,7 +357,7 @@ get_cfg() {
 	short2dev "$dev" && cfgdev="$_RET" && [ -b "$cfgdev" ] ||
 		{ debug "$pre not present"; return 1; }
 
-	if mp="/tmp/${0##*/}.mp" && mkdir "$mp" &&
+	if mp="${TEMP_D}/mp" && mkdir "$mp" &&
 		mount -o ro "$cfgdev" "$mp"; then
 		if [ -f "$mp/$cfg" ]; then
 			cp "$mp/$cfg" "$file" && success=1 ||
@@ -349,49 +369,125 @@ get_cfg() {
 	else
 		debug "$pre mount failed"
 	fi
-	rmdir "$mp"
+	[ -d "$mp" ] || rmdir "$mp"
 	[ $success -eq 1 ] || return 1
-	_RET="$dev/$cfg:${file}"
+	_RET="$dev/$cfg"
 }
 
+parse_cfg() {
+	# parse_cfg($file,$desc,$vars)
+	# this reasonably safely sources the "config" file $file
+	# and then declares the variables listed to stdout
+	#
+	# known issues:
+	# * sourced file could re-define 'echo'
+	# * just fails if a value has a ' in it 
+	[ -f "$1" ] || return 0
+	tick="'" sh -c '
+		__tick=$tick
+		__file=$1; __desc=$2;
+		__unset__="__unset__"
+		shift 2
+		__vars="$*"
+		readonly __tick __file __desc __vars
+		. "${__file}"
+		if [ $? -ne 0 ]; then
+			echo "failed source \"${__file}\" ($__desc)" 1>&2
+			return 1
+		fi
+		set -e
+		echo "desc=${__tick}${__desc}${__tick}"
+		for var in ${__vars}; do
+			eval val=\${${var}-${__unset__}} || 
+				{ echo "eval of $var failed"; exit 1; }
+			[ "${val#*${__tick}}" = "${val}" ] || {
+				echo "variable \"$var\" had single tick in it. fail";
+				exit 1;
+			}
+			[ "${val}" = "${__unset__}" ] ||
+				echo "$var=${__tick}${val}${__tick}"
+		done
+	' -- "$@"
+}
 
-# collect kernel parameter value into a config file
-kern_cfg="/tmp/${0##*/}.kernel-cmdline.cfg"
-get_kernel_cmdline || fail "failed to read kernel command line!"
-[ -n "$_RET" ] && echo "overlayroot=${_RET}" > "$kern_cfg"
+readcfgd() {
+	local cfg_d="$1"
+	# this kind of stinks, each VARIABLE goes into global scope
+	local or="" or_cfgdisk=""
+	_RET_desc_oroot=""
+	_RET_desc_cfgdisk=""
+	set +f
+	for f in "${cfg_d}"/*; do
+		. "$f" || fail "failed reading $f"
+		[ "$or" != "${overlayroot}" ] &&
+			_RET_desc_oroot="$desc"
+		[ "${or_cfgdisk}" != "${overlayroot_cfgdisk}" ] &&
+			_RET_desc_cfgdisk="$desc"
+		or=${overlayroot}
+		or_cfgdisk=${overlayroot_cfgdisk}
+	done
+	set -f
+}
 
-# check to see if there is a disk giving us some config
-get_cfg "LABEL=OROOTCFG" "/tmp/${0##*/}.orootcfg.cfg" "overlayroot.conf" &&
-	orootcfg_pair="$_RET" || orootcfg_pair=""
+cfgd="${TEMP_D}/configs"
+mkdir -p "${cfgd}" || fail "failed to create tempdir"
+trap cleanup EXIT
 
-overlayroot=""
-prev_desc=""
-prev_file=""
-prev_val=""
-# each of these config locations gets an opportunity to override
-# previous declaration.
-for pair in "initramfs config:/conf/conf.d/overlayroot" \
-	"$ROOT/etc/overlayroot.conf:${ROOTMNT}/etc/overlayroot.conf" \
-	"$orootcfg_pair" "kernel cmdline:$kern_cfg"; do
-	[ -n "$pair" ] || continue
-	cur_desc=${pair%%:*}
-	cur_file=${pair#${cur_desc}:}
-	[ -f "$cur_file" ] || continue
-	set -f; . "$cur_file"; set +f
-	if [ "$prev_val" != "$overlayroot" ]; then
-		used_file="$cur_file"
-		used_desc="$cur_desc"
-		debug "$cur_file set overlayroot=$overlayroot"
-	fi
-	if [ -n "$prev_val" -a "$overlayroot" != "$prev_val" ]; then
-		log_warn "$cur_desc overwrote value from $prev_desc with '$overlayroot'"
-	fi
-	prev_file="$cur_file"
-	prev_desc="$cur_desc"
-done
-rm -f "$kern_cfg"
+# collect the different config locations into a file
+# write individual config files in $cfgd that contain
+{
+echo "desc='builtin'"
+echo "overlayroot=''"
+echo "overlayroot_cfgdisk='disabled'"
+} > "$cfgd/00-builtin"
+
+write_kernel_cmdline_cfg "${cfgd}/90-kernel" ||
+	fail "failed to read kernel command line!"
+
+parse_cfg "/conf/conf.d/overlayroot" "initramfs config" \
+	"$VARIABLES" > "${cfgd}/10-initramfs" ||
+	fail "failed parsing initramfs config"
+
+parse_cfg "${ROOTMNT}/etc/overlayroot.conf" "$ROOT/etc/overlayroot.conf" \
+	"$VARIABLES" > "${cfgd}/20-root-config" ||
+	fail "failed parsing root config"
+
+parse_cfg "${ROOTMNT}/etc/overlayroot.local.conf" \
+	"$ROOT/etc/overlayroot.local.conf" \
+	"$VARIABLES" > "${cfgd}/30-root-local-config" ||
+	fail "failed parsing root config"
+
+# now read the trusted configs, to see if overlayroot_cfgdisk is set
+readcfgd "$cfgd" ||
+	fail "reading configs failed"
+used_desc="${_RET_desc_oroot}"
+
+[ -n "${_RET_desc_cfgdisk}" ] &&
+	debug "${_RET_desc_cfgdisk} set cfgdisk='${overlayroot_cfgdisk}'"
+
+# if one of the trusted configs above gave us set the overlayroot_cfgdisk
+# variable, then look for such a device and read a config from it.
+cfgdisk=0
+if [ "${overlayroot_cfgdisk:-disabled}" != "disabled" ] &&
+	get_cfg "${overlayroot_cfgdisk}" "${TEMP_D}/cfgdisk"; then
+	desc=${_RET}
+	parse_cfg "${TEMP_D}/cfgdisk" "${desc}" "$VARIABLES" \
+		> "${cfgd}/80-cfgdisk" ||
+		fail "reading config from ${desc} failed"
+	used_desc="${_RET_desc_oroot}"
+
+	# now read the parsed configs again.
+	readcfgd "$cfgd" ||
+		fail "reading configs failed"
+
+	[ -n "${_RET_desc_cfgdisk}" ] &&
+		debug "${_RET_desc_cfgdisk} set cfgdisk=${overlayroot_cfgdisk}"
+	[ -n "${_RET_desc_oroot}" ] &&
+		debug "${_RET_desc_oroot} set overlayroot=${overlayroot}"
+fi
 
 opts=""
+cfgmsg="${used_desc:+ (per ${used_desc})}"
 case "${overlayroot:-disabled}" in
 	tmpfs|tmpfs:*)
 		mode="tmpfs"
@@ -404,7 +500,7 @@ case "${overlayroot:-disabled}" in
 			*) opts="${overlayroot#device:}";;
 		esac
 		dev_setup "${opts}" ||
-			fail "failed setup overlay for ${overlayroot} [$opts]"
+			fail "failed setup overlay for ${overlayroot} [$opts]${cfgmsg}"
 		mode="device"
 		device="$_RET_DEVICE"
 		;;
@@ -412,14 +508,14 @@ case "${overlayroot:-disabled}" in
 		mode="crypt"
 		opts=${overlayroot#crypt:}
 		crypto_setup "${opts}" ||
-			fail "failed setup crypt for ${overlayroot}"
+			fail "failed setup crypt for ${overlayroot}${cfgmsg}"
 		device="$_RET_DEVICE"
 		;;
 	disabled)
-		debug "overlayroot disabled${used_desc:+ per ${used_desc}}"
+		debug "overlayroot disabled${cfgmsg}"
 		exit 0;;
 	*)
-		fail "invalid value for overlayroot: $overlayroot";
+		fail "invalid value for overlayroot: ${overlayroot}${cfgmsg}"
 		exit 0;;
 esac
 
