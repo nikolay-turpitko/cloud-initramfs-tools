@@ -458,6 +458,7 @@ parse_cfg "${ROOTMNT}/etc/overlayroot.local.conf" \
 # now read the trusted configs, to see if overlayroot_cfgdisk is set
 readcfgd "$cfgd" ||
 	fail "reading configs failed"
+used_desc="${_RET_desc_oroot}"
 
 [ -n "${_RET_desc_cfgdisk}" ] &&
 	debug "${_RET_desc_cfgdisk} set cfgdisk='${overlayroot_cfgdisk}'"
@@ -471,10 +472,8 @@ if [ "${overlayroot_cfgdisk:-disabled}" != "disabled" ] &&
 	parse_cfg "${TEMP_D}/cfgdisk" "${desc}" "$VARIABLES" \
 		> "${cfgd}/80-cfgdisk" ||
 		fail "reading config from ${desc} failed"
-	cfgdisk=1
-fi
+	used_desc="${_RET_desc_oroot}"
 
-if [ $cfgdisk -ne 0 ]; then
 	# now read the parsed configs again.
 	readcfgd "$cfgd" ||
 		fail "reading configs failed"
