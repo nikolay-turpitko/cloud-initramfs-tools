@@ -436,7 +436,7 @@ trap cleanup EXIT
 echo "desc='builtin'"
 echo "overlayroot=''"
 echo "overlayroot_cfgdisk='disabled'"
-} > "$cfgd/00-bulitin"
+} > "$cfgd/00-builtin"
 
 write_kernel_cmdline_cfg "${cfgd}/90-kernel" ||
 	fail "failed to read kernel command line!"
