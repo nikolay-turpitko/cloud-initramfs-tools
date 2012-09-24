@@ -57,14 +57,18 @@ for f in /run/net-*.conf; do
 		echo "iface $DEVICE inet dhcp"
 	elif [ "$PROTO" = "static" ]; then
 		echo "iface $DEVICE inet static"
-		[ -n "$IPV4ADDR" ] && printf "\t%s" "address $IPV4ADDR"
-		[ -n "$IPV4NETMASK" ] && printf "\t%s" "netmask $IPV4NETMASK"
-		[ -n "$IPV4GATEWAY" ] && printf "\t%s" "netmask $IPV4GATEWAY"
+		[ -n "$IPV4ADDR" ] && printf "\t%s\n" "address $IPV4ADDR"
+		[ -n "$IPV4NETMASK" ] && printf "\t%s\n" "netmask $IPV4NETMASK"
+		[ -n "$IPV4GATEWAY" ] && printf "\t%s\n" "netmask $IPV4GATEWAY"
 	fi
-	[ -n "$IPV4DNS0" ] &&
-		printf "\t%s" "dns-nameservers ${IPV4DNS0}${IPV4DNS1:+ ${IPV4DNS1}}"
+	if [ -n "$IPV4DNS0" -a "$IPV4DNS0" != "0.0.0.0" ]; then
+		nsline="dns-nameservers ${IPV4DNS0}"
+		[ -n "$IPV4DNS1" -a "$IPV4DNS1" != "0.0.0.0" ] &&
+			nsline="${nsline} ${IPV4DNS1}"
+		printf "\t%s\n" "$nsline"
+	fi
 	[ -n "$DNSDOMAIN" -o -n "$DOMAINSEARCH" ] &&
-		printf "\t%s" "dns-search ${DNSDOMAIN} ${DOMAINSEARCH}"
+		printf "\t%s\n" "dns-search ${DNSDOMAIN} ${DOMAINSEARCH}"
 done >> "$tmpf"
 
 [ -d /run/network ] || mkdir /run/network

@@ -2,7 +2,7 @@
 set -e
 set -f
 
-PREREQS=""
+PREREQS="udev"
 case $1 in
     prereqs) echo "${PREREQS}"; exit 0;;
 esac
@@ -51,12 +51,13 @@ esac
 
 ## we need to "fix" an IP= string that contains 'BOOTIF'
 ## to instead reference the actual interface.
+wait_for_udev 10
 
 bootif2macaddr "$BOOTIF" && [ -n "$_RET" ] ||
 	fail "failed to convert BOOTIF='$BOOTIF'";
 macaddr=${_RET}
 
-find_nic_by_mac "$maccaddr" && [ -n "$_RET" ] ||
+find_nic_by_mac "$macaddr" && [ -n "$_RET" ] ||
 	fail "did no find a nic with $macaddr"
 devname=${_RET}
 
