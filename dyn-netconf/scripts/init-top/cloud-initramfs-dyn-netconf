@@ -1,0 +1,68 @@
+#!/bin/sh
+set -e
+set -f
+
+PREREQS="udev"
+case $1 in
+	prereqs) echo "${PREREQS}"; exit 0;;
+esac
+
+. /scripts/functions
+
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+
+error() { echo "${0##*/}:" "$@" 1>&2; }
+fail() { [ $# -eq 0 ] || error "$@"; exit 0; }
+## this function ins taken and cleaned from configure_networking
+find_nic_by_mac() {
+		# look for devices with matching mac address, and set DEVICE to
+		# appropriate value if match is found.
+		local mac="$1" curmac="" device="" found=""
+		set +f
+		for device in /sys/class/net/* ; do
+			[ -f "$device/address" ] || continue
+			read curmac < "$device/address" || continue
+			[ "$curmac" = "$mac" ] && found="${device##*/}" && break
+		done
+		set -f
+		[ -n "$found" ] && _RET=$found && return 0
+		return 1
+}
+
+bootif2macaddr() {
+	# bootif is specified as BOOTIF=01-${mac_address} with '-' rather than ':'
+	local input="$1" tok
+	input=${input#??-}
+	IFS="-"
+	_RET=""
+	for tok in $input; do
+		_RET="${_RET}:${tok}"
+	done
+	_RET=${_RET#:}
+}
+
+# no IP or IP not containing BOOTIF means nothing to do
+case $IP in
+	*BOOTIF*) :;;
+	*) exit 0
+esac
+
+[ -n "$BOOTIF" ] || fail "WARNING: IP='$IP' but no BOOTIF set!"
+
+## we need to "fix" an IP= string that contains 'BOOTIF'
+## to instead reference the actual interface.
+wait_for_udev 10
+
+bootif2macaddr "$BOOTIF" && [ -n "$_RET" ] ||
+	fail "failed to convert BOOTIF='$BOOTIF'";
+macaddr=${_RET}
+
+find_nic_by_mac "$macaddr" && [ -n "$_RET" ] ||
+	fail "did no find a nic with $macaddr"
+devname=${_RET}
+
+new=$(echo "$IP" | sed "s,BOOTIF,$devname,g")
+
+echo "IP='$new'" > /conf/param.conf
+
+# vi: ts=4 noexpandtab

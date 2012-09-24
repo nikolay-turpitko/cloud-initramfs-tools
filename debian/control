@@ -55,3 +55,11 @@ Description: use an overlayfs on top of a read-only root filesystem
  The changes can be written to a in-memory temporary filesystem, a
  filesystem on an existing block device, or a dmcrypt encrypted block
  device.
+
+Package: cloud-initramfs-dyn-netconf
+Architecture: all
+Depends: initramfs-tools, ${misc:Depends}, ${shlibs:Depends}
+Description: write a network interface file in /run for BOOTIF
+ This package provides an initramfs module that will write a simple
+ network interfaces formated file to /run/network/interfaces with
+ entries for any devices that were configured during initramfs.
