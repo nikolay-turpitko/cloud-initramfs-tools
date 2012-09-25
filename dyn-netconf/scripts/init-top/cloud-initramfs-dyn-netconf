@@ -41,6 +41,24 @@ bootif2macaddr() {
 	_RET=${_RET#:}
 }
 
+# if hostname= is on the cmdline and ip=dhcp, then change IP to 
+# ::::$hostname:BOOTIF:dhcp
+# this allows old code that specified 'ip=' to still convince ipconfig
+# to request a given provide the given hostname in dhcp request without
+# requiring '::::$hostname:' which implies "wait for all network devices"
+# it is really a specific kludge to deal with newer maas needing
+# to operating with existing original images from 12.04, that do not
+# have the ability to take ip=::::<hostname>:BOOTIF (LP:1046405)
+#
+if [ -n "$BOOTIF" -a "$IP" = "dhcp" ]; then
+	read cmdline < /proc/cmdline
+	for tok in $cmdline; do
+		case "$tok" in
+			hostname=*) IP="::::${tok#hostname=}:BOOTIF:dhcp"
+		esac
+	done
+fi
+
 # no IP or IP not containing BOOTIF means nothing to do
 case $IP in
 	*BOOTIF*) :;;
