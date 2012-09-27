@@ -65,7 +65,7 @@ for f in /run/net-*.conf /tmp/net-*.conf; do
 		fi
 	fi
 
-	echo "auto $DEVICE"
+	echo "manual $DEVICE"
 	if [ "$PROTO" = "dhcp" ]; then
 		echo "iface $DEVICE inet dhcp"
 	elif [ "$PROTO" = "static" ]; then
