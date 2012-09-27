@@ -31,15 +31,50 @@ find_nic_by_mac() {
 
 bootif2macaddr() {
 	# bootif is specified as BOOTIF=01-${mac_address} with '-' rather than ':'
-	local input="$1" tok
+	local input="$1" tok oifs="$IFS"
 	input=${input#??-}
 	IFS="-"
 	_RET=""
 	for tok in $input; do
 		_RET="${_RET}:${tok}"
 	done
+	IFS="$oifs"
 	_RET=${_RET#:}
 }
+
+nic2bootif() {
+	local nic="$1" macaddr="" tok="" oifs="$IFS"
+	[ -f "/sys/class/net/$nic/address" ] || return 1
+	read macaddr < "/sys/class/net/$nic/address"
+	IFS=":"
+	_RET="01"
+	for tok in $macaddr; do
+		_RET="${_RET}-${tok}"
+	done
+	IFS="$oifs"
+}
+
+read CMDLINE < /proc/cmdline
+
+# if BOOTIF_DEFAULT was provided, but no BOOTIF was provided then we set
+# BOOTIF to BOOTIF_DEFAULT.  This allows a pxe boot implementation without
+# the ability or knowledge to specify IPAPPEND to function.
+bootif_new=""
+if [ -z "$BOOTIF" ]; then
+	for tok in $CMDLINE; do
+		case "$tok" in
+			BOOTIF_DEFAULT=*)
+				wait_for_udev 10
+				nic2bootif "${tok#BOOTIF_DEFAULT=}" || {
+					echo "WARNING: ${0##*/}: no device $tok"
+					continue
+				}
+				BOOTIF=${_RET}
+				bootif_new=${BOOTIF}
+				;;
+		esac
+	done
+fi
 
 # if hostname= is on the cmdline and ip=dhcp, then change IP to 
 # ::::$hostname:BOOTIF:dhcp
@@ -51,8 +86,7 @@ bootif2macaddr() {
 # have the ability to take ip=::::<hostname>:BOOTIF (LP:1046405)
 #
 if [ -n "$BOOTIF" -a "$IP" = "dhcp" ]; then
-	read cmdline < /proc/cmdline
-	for tok in $cmdline; do
+	for tok in $CMDLINE; do
 		case "$tok" in
 			hostname=*) IP="::::${tok#hostname=}:BOOTIF:dhcp"
 		esac
@@ -81,6 +115,9 @@ devname=${_RET}
 
 new=$(echo "$IP" | sed "s,BOOTIF,$devname,g")
 
-echo "IP='$new'" > /conf/param.conf
+{
+	echo "IP='$new'" 
+	[ -z "$bootif_new" ] || echo "BOOTIF='${bootif_new}'"
+} > /conf/param.conf
 
 # vi: ts=4 noexpandtab
