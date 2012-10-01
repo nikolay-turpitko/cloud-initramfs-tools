@@ -56,9 +56,10 @@ nic2bootif() {
 
 read CMDLINE < /proc/cmdline
 
-# if BOOTIF_DEFAULT was provided, but no BOOTIF was provided then we set
-# BOOTIF to BOOTIF_DEFAULT.  This allows a pxe boot implementation without
-# the ability or knowledge to specify IPAPPEND to function.
+# if BOOTIF_DEFAULT was present on the kernel cmdline, but no BOOTIF was
+# provided then we set BOOTIF based on the network device *name* in
+# BOOTIF_DEFAULT (BOOTIF_DEFAULT=eth0).  This allows a pxe boot implementation
+# without the ability or knowledge to specify IPAPPEND to function.
 bootif_new=""
 if [ -z "$BOOTIF" ]; then
 	for tok in $CMDLINE; do
@@ -76,15 +77,16 @@ if [ -z "$BOOTIF" ]; then
 	done
 fi
 
-# if hostname= is on the cmdline and ip=dhcp, then change IP to 
-# ::::$hostname:BOOTIF:dhcp
-# this allows old code that specified 'ip=' to still convince ipconfig
-# to request a given provide the given hostname in dhcp request without
-# requiring '::::$hostname:' which implies "wait for all network devices"
-# it is really a specific kludge to deal with newer maas needing
-# to operating with existing original images from 12.04, that do not
-# have the ability to take ip=::::<hostname>:BOOTIF (LP:1046405)
+# if hostname= is on the cmdline and IP=="dhcp", then change IP to
+#    ::::$hostname:BOOTIF:dhcp
+# This allows old code that specified 'ip=dhcp' to still convince ipconfig to
+# use a given hostname in dhcp request without requiring '::::$hostname:'.
+# The '::::$hostname:' without a device name means "wait for all network
+# devices".  If some are not plugged in, then it will hang for quite some time.
 #
+# This is really a specific kludge to deal with newer maas needing to operating
+# with existing original images from 12.04.  Those images were not able to
+# accept 'ip::::$hostname:BOOTIF' as they did not have this package installed.
 if [ -n "$BOOTIF" -a "$IP" = "dhcp" ]; then
 	for tok in $CMDLINE; do
 		case "$tok" in
