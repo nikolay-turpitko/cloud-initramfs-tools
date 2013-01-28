@@ -50,15 +50,21 @@ partnum=${rootdev#${rootdisk}}
 # if growpart fails, exit.
 # we capture stderr because on success of dry-run, it writes
 # to stderr what it would do.
-out=$(growpart --dry-run "${rootdisk}" "${partnum}" 2>&1) ||
-	{ msg "${out}"; exit 1; }
+out=$(growpart --dry-run "${rootdisk}" "${partnum}" 2>&1)
+ret=$?
 
 # if growpart would change something, --dry-run will write something like
 #  CHANGE: partition=1 start=2048 old: size=1024000 end=1026048 new: size=2089192,end=2091240
-# anything else, exit
-case "${out}" in
-	CHANGE:*) :;;
-	*) exit 0;;
+# newer versions of growpart will exit
+#   0: with 'CHANGE:*' in output on changed
+#   1: with 'NOCHANGE:*' in output on no-change-necessary
+#   2: error occurred
+# older versions of growpart would exit '1' on all failure scenarios
+# or with 'no-change-necessary'
+case "$ret:$out" in
+	0:CHANGE:*) :;;
+	[01]:NOCHANGE:*) exit 0;;
+	*) msg "exited '$ret'" "${out}"; exit 1;;
 esac
 
 # There was something to do, unmount and resize

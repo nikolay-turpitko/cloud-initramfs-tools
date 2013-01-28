@@ -1,3 +1,9 @@
+cloud-initramfs-tools (0.19-ubuntu1) UNRELEASED; urgency=low
+
+  * support growpart exit status of '1' indicating "no-change-necessary"
+
+ -- Scott Moser <smoser@ubuntu.com>  Mon, 28 Jan 2013 10:08:44 -0500
+
 cloud-initramfs-tools (0.18-ubuntu1) quantal; urgency=low
 
   * add cloud-initramfs-dyn-netconf package.
