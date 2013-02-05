@@ -2,6 +2,9 @@ cloud-initramfs-tools (0.19-ubuntu1) UNRELEASED; urgency=low
 
   * cloud-initramfs-growroot: support growpart exit status of '1'
     indicating "no-change-necessary"
+  * cloud-initramfs-dyn-netconf: run at init-premount rather than
+    init-top to ensure that 'load_modules' has been run and udev is
+    running (LP: #1116426)
 
  -- Scott Moser <smoser@ubuntu.com>  Mon, 28 Jan 2013 10:08:44 -0500
 
