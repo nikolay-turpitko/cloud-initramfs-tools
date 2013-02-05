@@ -1,4 +1,4 @@
-cloud-initramfs-tools (0.19-ubuntu1) UNRELEASED; urgency=low
+cloud-initramfs-tools (0.19ubuntu1) UNRELEASED; urgency=low
 
   * cloud-initramfs-growroot: support growpart exit status of '1'
     indicating "no-change-necessary"
