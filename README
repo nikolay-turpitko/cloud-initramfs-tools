@@ -44,3 +44,12 @@ and access the system to fix it.
 If the volume contains a file '/etc/rescuevol-ignore' it will be ignored.
 This allows you to fix your instance, create that volume and *not* boot the
 rescue volume on next boot
+
+== overlayroot ==
+Configure overlayfs filesystems over the root device based on
+configuration provided by kernel command line or in-image config.
+
+see overlayroot/etc/overlayroot.conf for more information.
+
+== dyn-netconf ==
+see dyn-netconf/doc/README.txt
