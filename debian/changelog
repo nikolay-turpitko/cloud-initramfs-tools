@@ -1,4 +1,4 @@
-cloud-initramfs-tools (0.19ubuntu1) UNRELEASED; urgency=low
+cloud-initramfs-tools (0.19ubuntu1) raring; urgency=low
 
   * cloud-initramfs-growroot: support growpart exit status of '1'
     indicating "no-change-necessary"
@@ -6,7 +6,7 @@ cloud-initramfs-tools (0.19ubuntu1) UNRELEASED; urgency=low
     init-top to ensure that 'load_modules' has been run and udev is
     running (LP: #1116426)
 
- -- Scott Moser <smoser@ubuntu.com>  Mon, 28 Jan 2013 10:08:44 -0500
+ -- Scott Moser <smoser@ubuntu.com>  Tue, 05 Feb 2013 16:49:23 -0500
 
 cloud-initramfs-tools (0.18-ubuntu1) quantal; urgency=low
 
