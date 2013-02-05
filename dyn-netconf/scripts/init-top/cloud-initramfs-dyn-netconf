@@ -115,7 +115,12 @@ find_nic_by_mac "$macaddr" && [ -n "$_RET" ] ||
 	fail "did no find a nic with $macaddr"
 devname=${_RET}
 
-new=$(echo "$IP" | sed "s,BOOTIF,$devname,g")
+# now replace occurences of BOOTIF in $IP with $devname
+cur="$IP"
+while [ "${cur#*BOOTIF}" != "$cur" ]; do
+   cur="${cur%%BOOTIF*}$devname${cur#*BOOTIF}"
+done
+new=$cur
 
 {
 	echo "IP='$new'" 
