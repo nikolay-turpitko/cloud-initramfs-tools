@@ -6,16 +6,16 @@
 . /lib/dracut-lib.sh
 
 _info() {
-    echo "growroot:" "$*"
+    echo "growroot: $*"
 }
 
 _warning() {
-    echo "growroot Warning:" "$*" >&2
+    echo "growroot Warning: $*" >&2
 }
 
 # This will drop us into an emergency shell
 _fatal() {
-    echo "growroot Fatal:"  "$*" >&2
+    echo "growroot Fatal: $*" >&2
     exit 1
 }
 
