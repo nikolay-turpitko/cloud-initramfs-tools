@@ -31,4 +31,24 @@ install:
 	install -m 755 "overlayroot/usr/sbin/overlayroot-chroot" "$(DESTDIR)/usr/sbin"
 	install -m 644 "overlayroot/usr/share/man/man8/overlayroot-chroot.8" "$(DESTDIR)/usr/share/man/man8"
 
+#
+# Fedora/EPEL
+#
+
+DRACUT_GROWROOT_D = dracut/modules.d/50growroot
+
+install-fedora:
+	mkdir -p "$(DESTDIR)/$(DRACUT_GROWROOT_D)"
+	for f in growroot.sh module-setup.sh ; do \
+		install "growroot/$(DRACUT_GROWROOT_D)/$$f" \
+			"$(DESTDIR)/$(DRACUT_GROWROOT_D)/" ; \
+	done
+
+install-epel:
+	mkdir -p "$(DESTDIR)/$(DRACUT_GROWROOT_D)"
+	for f in growroot.sh install ; do \
+		install "growroot/$(DRACUT_GROWROOT_D)/$$f" \
+			"$(DESTDIR)/$(DRACUT_GROWROOT_D)/" ; \
+	done
+
 # vi: ts=4 noexpandtab syntax=make
