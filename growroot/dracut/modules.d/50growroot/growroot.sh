@@ -45,7 +45,7 @@ _growroot()
 	read rootdev rootmnt rootfs opts unused <<EOF
 ${out}
 EOF
-	if [ -z "{rootdev}" -o -z "${rootmnt}" -o -z "${rootfs}" -o \
+	if [ -z "${rootdev}" -o -z "${rootmnt}" -o -z "${rootfs}" -o \
 		-z "${opts}" ] ; then
 	_warning "${out}"
 	return
