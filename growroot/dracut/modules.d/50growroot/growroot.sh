@@ -36,8 +36,8 @@ _growroot()
 
 	# Get the root device, root filesystem and mount options
 	if ! out=$(awk '$2 == mt { print }' "mt=${NEWROOT}" < /proc/mounts) ; then
-	_warning "${out}"
-	return
+		_warning "${out}"
+		return
 	fi
 
 	# Need to do it this way, can't use '<<< "${out}"' since RHEL6 doesn't
@@ -47,8 +47,8 @@ ${out}
 EOF
 	if [ -z "${rootdev}" -o -z "${rootmnt}" -o -z "${rootfs}" -o \
 		-z "${opts}" ] ; then
-	_warning "${out}"
-	return
+		_warning "${out}"
+		return
 	fi
 
 	# If the basename of the root device (ie 'xvda1', 'sda1', 'vda') exists
