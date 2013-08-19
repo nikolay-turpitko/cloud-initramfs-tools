@@ -442,7 +442,7 @@ fix_upstart_overlayfs() {
 	[ -d "$root/etc/init" ] || return 0
 	echo "#upstart needs help for overlayfs (LP: #1213925)." \
 		> "$root/$eifile" ||
-		{ log_fail "failed to write $root/$ei_file"; return 1; }
+		{ log_fail "failed to write $root/$eifile"; return 1; }
 	debug "created $eifile under $root (LP: #1213925)"
 }
 
