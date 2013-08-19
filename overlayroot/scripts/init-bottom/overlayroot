@@ -429,6 +429,23 @@ readcfgd() {
 	set -f
 }
 
+fix_upstart_overlayfs() {
+	# inotify events on an overlayfs underlay do not propogate through
+	# a newly created overlay.  This causes job creation and deletion issues
+	# for upstart, which uses inotify on /etc/init. So ensure that the overlay
+	# explicitly has a /etc/init (LP: #1213925)
+	local root="$1"
+	local initctl="$root/sbin/initctl"
+	local eifile="/etc/init/.overlayfs-upstart-helper"
+
+	[ -e "$initctl" -o -L "$initctl" ] || return 0
+	[ -d "$root/etc/init" ] || return 0
+	echo "#upstart needs help for overlayfs (LP: #1213925)." \
+		> "$root/$eifile" ||
+		{ log_fail "failed to write $root/$ei_file"; return 1; }
+	debug "created $eifile under $root (LP: #1213925)"
+}
+
 cfgd="${TEMP_D}/configs"
 mkdir -p "${cfgd}" || fail "failed to create tempdir"
 trap cleanup EXIT
@@ -664,6 +681,11 @@ overlayrootify_fstab ""${ROOTMNT}${root_ro}/etc/fstab"" "$root_ro" \
 for d in ${_RET}; do
 	mkdir -p "${ROOTMNT}/$d"
 done
+
+if [ "${overlayroot_driver}" = "overlayfs" ]; then
+	fix_upstart_overlayfs "$ROOTMNT" ||
+		log_fail "failed to fix upstart for overlayfs"
+fi
 
 # if / is supposed to be mounted read-only (cmdline with 'ro')
 # then mount our overlayfs as read-only just to be more normal
