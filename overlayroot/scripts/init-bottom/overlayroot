@@ -434,7 +434,7 @@ fix_upstart_overlayfs() {
 	# a newly created overlay.  This causes job creation and deletion issues
 	# for upstart, which uses inotify on /etc/init. So ensure that the overlay
 	# explicitly has a /etc/init (LP: #1213925)
-	local root="$2"
+	local root="$1"
 	local initctl="$root/sbin/initctl"
 	local eifile="/etc/init/.overlayfs-upstart-helper"
 
