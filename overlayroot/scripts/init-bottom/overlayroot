@@ -682,7 +682,7 @@ for d in ${_RET}; do
 	mkdir -p "${ROOTMNT}/$d"
 done
 
-if [ "${overlayroot_driver}" != "overlayfs" ]; then
+if [ "${overlayroot_driver}" = "overlayfs" ]; then
 	fix_upstart_overlayfs "$ROOTMNT" ||
 		log_fail "failed to fix upstart for overlayfs"
 fi
