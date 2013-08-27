@@ -23,7 +23,7 @@ Description: boot off a rescue volume rather than root filesystem
 
 Package: cloud-initramfs-growroot
 Architecture: all
-Depends: cloud-utils (>= 0.21ubuntu1),
+Depends: cloud-utils (>= 0.21ubuntu1) | cloud-guest-utils,
          initramfs-tools,
          util-linux (>= 2.17.2),
          ${misc:Depends},
