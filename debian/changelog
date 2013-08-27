@@ -1,10 +1,10 @@
-cloud-initramfs-tools (0.20ubuntu1) UNRELEASED; urgency=low
+cloud-initramfs-tools (0.20ubuntu1) saucy; urgency=low
 
   * debian/control: depend on cloud-utils or cloud-guest-utils.
   * overlayroot: include a fix for creating /etc/init in overlay so
     inotify works correctly.
 
- -- Scott Moser <smoser@ubuntu.com>  Tue, 27 Aug 2013 16:31:44 -0400
+ -- Scott Moser <smoser@ubuntu.com>  Tue, 27 Aug 2013 16:48:53 -0400
 
 cloud-initramfs-tools (0.19ubuntu1) raring; urgency=low
 
