@@ -1,3 +1,13 @@
+cloud-initramfs-tools (0.21ubuntu1) UNRELEASED; urgency=low
+
+  * === added directory overlayroot/etc/update-motd.d,
+    debian/overlayroot.install, overlayroot/etc/update-motd.d/97-
+    overlayroot:
+    - add an update-motd message, when booted in an overlayroot
+      environment
+
+ -- Dustin Kirkland <kirkland@ubuntu.com>  Fri, 15 Nov 2013 12:03:47 -0600
+
 cloud-initramfs-tools (0.20ubuntu1) saucy; urgency=low
 
   * debian/control: depend on cloud-utils or cloud-guest-utils.

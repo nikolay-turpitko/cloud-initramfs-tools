@@ -1,4 +1,5 @@
 etc/overlayroot.conf
+etc/update-motd.d
 usr/sbin/overlayroot-chroot
 usr/share/initramfs-tools/hooks/overlayroot
 usr/share/initramfs-tools/scripts/*/overlayroot
