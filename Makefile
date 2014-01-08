@@ -20,8 +20,14 @@ install:
 		done; done
 	set -e; for d in $(MODULES); do \
 		[ -d "$$d/etc" ] || continue ; \
-		install -m 644 "$$d/etc"/* "$(DESTDIR)/etc" ; \
-		done
+		for f in $$d/etc/*; do \
+		    if [ -d "$$f" ];then \
+		    		install -m 755 -d "$(DESTDIR)/etc/$${f##*/}" ; \
+				install "$$f"/* "$(DESTDIR)/etc/$${f##*/}" ; \
+				continue ; \
+				fi ;\
+			install -m 644 -t "$(DESTDIR)/etc" "$$f" ;\
+			done; done
 	set -e; for d in $(MODULES); do \
 		[ -d "$$d/tools" ] || continue ; \
 		mkdir -p "$(ULIB_PRE)$$d/" && \

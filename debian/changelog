@@ -1,3 +1,11 @@
+cloud-initramfs-tools (0.21ubuntu2) trusty; urgency=low
+
+  * Fix Makefile to avoid FTBS caused by subdir in overlayroot/etc
+    Makefile now takes into account when subdirectories are present in
+    the overlayroot directory.
+
+ -- Louis Bouchard <louis.bouchard@ubuntu.com>  Thu, 02 Jan 2014 03:26:22 +0000
+
 cloud-initramfs-tools (0.21ubuntu1) trusty; urgency=low
 
   * === added directory overlayroot/etc/update-motd.d,
