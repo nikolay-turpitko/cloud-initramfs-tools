@@ -42,6 +42,12 @@ while [ "${rootdisk%[0-9]}" != "${rootdisk}" ]; do
 done
 partnum=${rootdev#${rootdisk}}
 
+# account for devnameNpP devices (like mmcblk0p1).
+if [ "${rootdisk%[0-9]p}" != "${rootdisk}" ] &&
+	[ -b "${rootdisk%p}" ]; then
+	rootdisk="${rootdisk%p}"
+fi
+
 # if the basename of the root device (ie 'xvda1' or 'sda1') exists
 # in /sys/block/ then it is a block device, not a partition
 # (xen xvda1 is an example of such a funny named block device)
