@@ -2,6 +2,8 @@ cloud-initramfs-tools (0.22ubuntu1) UNRELEASED; urgency=medium
 
   * correctly identify partition and block device for devices named
     like devnameXpN, such as mmcblk0p1 (LP: #1236380).
+  * always include aesni_intel rather than doing it if there is
+    cpu support (LP: #1267225).
 
  -- Scott Moser <smoser@ubuntu.com>  Wed, 08 Jan 2014 12:47:34 -0500
 

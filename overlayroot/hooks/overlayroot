@@ -18,7 +18,8 @@ copy_exec /sbin/mke2fs /sbin
 manual_add_modules overlayfs
 manual_add_modules dm_mod
 manual_add_modules dm_crypt
-egrep -qswo "aes" /proc/cpuinfo && manual_add_modules aesni_intel || true
+# this is '||' only in case this module isn't built
+manual_add_modules aesni_intel || true
 
 # Grab as much true random data as possible, up to 4KB, and stash it into a
 # random seed in the initramfs
