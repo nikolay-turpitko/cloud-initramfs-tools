@@ -18,6 +18,11 @@ install:
 			mkdir -p "$$td" ; \
 			install "$$sd"/* "$$td"; \
 		done; done
+	set -e ; for d in $(MODULES); do \
+		[ -d $$d/conf-hooks.d/ ] || continue; \
+		mkdir -p "$(IRD)/conf-hooks.d"; \
+		install "$$d/conf-hooks.d"/* "$(IRD)/conf-hooks.d/" ; \
+		done
 	set -e; for d in $(MODULES); do \
 		[ -d "$$d/etc" ] || continue ; \
 		for f in $$d/etc/*; do \

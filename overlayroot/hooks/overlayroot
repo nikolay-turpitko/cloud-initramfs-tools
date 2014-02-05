@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-PREREQS=""
+PREREQS="cryptsetup"
 case $1 in
 	prereqs) echo "${PREREQS}"; exit 0;;
 esac
