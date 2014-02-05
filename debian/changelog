@@ -1,10 +1,10 @@
-cloud-initramfs-tools (0.23ubuntu1) UNRELEASED; urgency=low
+cloud-initramfs-tools (0.23ubuntu1) trusty; urgency=low
 
    [ Dimitri John Ledkov ]
    * modify overlayroot config to export CRYPTSETUP=yes so that
      crypto modules are included by cryptsetup. (LP: #1267225)
 
- -- Scott Moser <smoser@ubuntu.com>  Tue, 04 Feb 2014 11:45:03 +0200
+ -- Scott Moser <smoser@ubuntu.com>  Wed, 05 Feb 2014 15:13:58 +0200
 
 cloud-initramfs-tools (0.22ubuntu1) trusty; urgency=medium
 
