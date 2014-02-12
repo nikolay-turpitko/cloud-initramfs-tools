@@ -21,7 +21,7 @@ install:
 	set -e ; for d in $(MODULES); do \
 		[ -d $$d/conf-hooks.d/ ] || continue; \
 		mkdir -p "$(IRD)/conf-hooks.d"; \
-		install "$$d/conf-hooks.d"/* "$(IRD)/conf-hooks.d/" ; \
+		install -m 644 "$$d/conf-hooks.d"/* "$(IRD)/conf-hooks.d/" ; \
 		done
 	set -e; for d in $(MODULES); do \
 		[ -d "$$d/etc" ] || continue ; \

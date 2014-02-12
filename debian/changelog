@@ -1,3 +1,10 @@
+cloud-initramfs-tools (0.24ubuntu1) UNRELEASED; urgency=medium
+
+  * overlayroot: package conf-hooks.d/overlayroot which was previously
+    not included in the package.
+
+ -- Scott Moser <smoser@ubuntu.com>  Wed, 12 Feb 2014 13:31:57 -0500
+
 cloud-initramfs-tools (0.23ubuntu1) trusty; urgency=low
 
    [ Dimitri John Ledkov ]
