@@ -64,7 +64,7 @@ Description: write a network interface file in /run for BOOTIF
  network interfaces formated file to /run/network/interfaces with
  entries for any devices that were configured during initramfs.
 
-Package: copymods
+Package: cloud-initramfs-copymods
 Architecture: all
 Depends: initramfs-tools,
          ${misc:Depends},
