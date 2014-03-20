@@ -1,4 +1,4 @@
-MODULES = growroot rescuevol overlayroot dyn-netconf
+MODULES = growroot rescuevol overlayroot dyn-netconf copymods
 INITRAMFS_D = /usr/share/initramfs-tools
 IRD = $(DESTDIR)/$(INITRAMFS_D)
 ULIB_PRE = $(DESTDIR)/usr/lib/cloud-initramfs-
