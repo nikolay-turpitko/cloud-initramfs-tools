@@ -1,2 +1,2 @@
-usr/share/initramfs-tools/hooks/cloud-initramfs-copymods
-usr/share/initramfs-tools/scripts/*/cloud-initramfs-copymods
+usr/share/initramfs-tools/hooks/copymods
+usr/share/initramfs-tools/scripts/*/copymods
