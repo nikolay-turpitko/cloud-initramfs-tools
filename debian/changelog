@@ -1,3 +1,11 @@
+cloud-initramfs-tools (0.25ubuntu1) UNRELEASED; urgency=medium
+
+  * cloud-initramfs-copymods: Add new package that is useful
+    if you're booting kernel/initramfs that live external to
+    the root filesystem.
+
+ -- Scott Moser <smoser@ubuntu.com>  Tue, 25 Mar 2014 17:20:25 -0400
+
 cloud-initramfs-tools (0.24ubuntu1) trusty; urgency=medium
 
   * overlayroot: package conf-hooks.d/overlayroot which was previously

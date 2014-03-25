@@ -63,3 +63,16 @@ Description: write a network interface file in /run for BOOTIF
  This package provides an initramfs module that will write a simple
  network interfaces formated file to /run/network/interfaces with
  entries for any devices that were configured during initramfs.
+
+Package: cloud-initramfs-copymods
+Architecture: all
+Depends: initramfs-tools,
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: copy initramfs modules into root filesystem for later use
+ When booting with an external-to-root kernel and initramfs, you need
+ to ensure that /lib/modules contains any necessary modules not already
+ loaded.
+ .
+ This package arranges for the modules in the initramfs to be placed
+ into /lib/modules after the switchroot is done.
