@@ -16,10 +16,13 @@
 #    <http://www.gnu.org/licenses/>.
 
 prereqs() {
-	[ -e /scripts/init-bottom/overlayroot ] && echo "overlayroot";
+	local o="/scripts/init-bottom/overlayroot"  p=""
+	for p in "$DESTDIR/" ""; do
+		[ -e "$p$o" ] && echo "overlayroot" && return 0
+	done
 }
 
-[ "$1" != "prereqs" ] || { prereqs; exit 0; }
+[ "$1" != "prereqs" ] || { prereqs; exit; }
 
 . /scripts/functions
 
