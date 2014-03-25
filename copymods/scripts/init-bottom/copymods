@@ -38,19 +38,25 @@ fi
 myver=$(uname -r)
 
 if [ ! -d "/lib/modules/$myver" ]; then
-	log_warn_msg "Something odd, no /lib/modules/$myver."
+	log_warning_msg "Something odd, no /lib/modules/$myver."
 	exit 0
 fi
 
+LOG="/dev/.initramfs/copymods.log"
+log() { echo "$@" >> "$LOG"; }
+log "rootmnt=$rootmnt"
+log "== /proc/mounts =="
+cat /proc/mounts >> "$LOG"
+
 [ -d "$rootmnt/lib/modules" ] ||
-	{ log_warn_msg "No /lib/modules in target. cannot help."; exit 0; }
+	{ log_warning_msg "No /lib/modules in target. cannot help."; exit 0; }
 
 if [ -d "$rootmnt/lib/modules/$myver" ]; then
 	if [ "${myopts#*force}" = "$myopts" ]; then
-		log_warn_msg "Modules existed for $myver in target. use copymods=force."
+		log_warning_msg "Modules existed for $myver in target. use copymods=force."
 		exit 0
 	else
-		log_warn_msg "copying over existing modules! due to copymods=force"
+		log_warning_msg "copying over existing modules! due to copymods=force"
 	fi
 fi
 
