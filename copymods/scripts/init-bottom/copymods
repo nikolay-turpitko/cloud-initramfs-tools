@@ -16,7 +16,7 @@
 #    <http://www.gnu.org/licenses/>.
 
 prereqs() {
-	[ -e scripts/init-bottom/overlayroot ] && echo "overlayroot";
+	[ -e /scripts/init-bottom/overlayroot ] && echo "overlayroot";
 }
 
 [ "$1" != "prereqs" ] || { prereqs; exit 0; }

@@ -1,7 +1,14 @@
 #!/bin/sh
 set -e
 
-[ "$1" = "prereqs" ] && exit 0
+prereqs() {
+	local o="/scripts/init-bottom/overlayroot"  p=""
+	for p in "$DESTDIR/" ""; do
+		[ -e "$p$o" ] && echo "overlayroot" && return 0
+	done
+}
+
+[ "$1" = "prereqs" ] && { prereqs; exit; }
 
 . /usr/share/initramfs-tools/hook-functions
 
