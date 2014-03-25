@@ -45,13 +45,7 @@ if [ ! -d "/lib/modules/$myver" ]; then
 	exit 0
 fi
 
-LOG="/dev/.initramfs/copymods.log"
-log() { echo "$@" >> "$LOG"; }
-log "rootmnt=$rootmnt"
-log "== /proc/mounts =="
-cat /proc/mounts >> "$LOG"
-
-[ -d "$rootmnt/lib/modules" ] ||
+[ -d "$rootmnt/lib/modules" ] || mkdir -p "$rootmnt/lib/modules" ||
 	{ log_warning_msg "No /lib/modules in target. cannot help."; exit 0; }
 
 if [ -d "$rootmnt/lib/modules/$myver" ]; then
@@ -68,5 +62,8 @@ mount -t tmpfs copymods "$rootmnt/lib/modules" ||
 
 mv "/lib/modules/$myver" "$rootmnt/lib/modules" ||
 	{ log_failure_msg "failed to copy modules to target root"; exit 0; }
+
+ln -s "$rootmnt/lib/modules" "/lib/modules/$myver" ||
+	{ log_failure_msg "failed to link to modules"; exit 0; }
 
 # vi: ts=4 noexpandtab
