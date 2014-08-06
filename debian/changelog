@@ -1,3 +1,10 @@
+cloud-initramfs-tools (0.26ubuntu1) UNRELEASED; urgency=medium
+
+  * cloud-initramfs-dyn-netconf: support BOOTIF= that contains
+    upper case a-f.
+
+ -- Scott Moser <smoser@ubuntu.com>  Wed, 06 Aug 2014 16:58:36 -0400
+
 cloud-initramfs-tools (0.25ubuntu1) trusty; urgency=medium
 
   * cloud-initramfs-copymods: Add new package that is useful

@@ -15,9 +15,11 @@ error() { echo "${0##*/}:" "$@" 1>&2; }
 fail() { [ $# -eq 0 ] || error "$@"; exit 0; }
 ## this function ins taken and cleaned from configure_networking
 find_nic_by_mac() {
-		# look for devices with matching mac address, and set DEVICE to
-		# appropriate value if match is found.
+		# look for devices with matching mac address, and set RET if found.
 		local mac="$1" curmac="" device="" found=""
+		case "$mac" in
+			*[A-Z]*) mac=$(echo "$mac" | awk '{print(tolower($0))}')
+		esac
 		set +f
 		for device in /sys/class/net/* ; do
 			[ -f "$device/address" ] || continue
