@@ -2,8 +2,10 @@ cloud-initramfs-tools (0.26ubuntu1) UNRELEASED; urgency=medium
 
   * cloud-initramfs-dyn-netconf: support BOOTIF= that contains
     upper case a-f.
+  * overlayroot: use required 'workdir' option on overlayfs mount for
+    kernels >= 3.18 (LP: #1411294)
 
- -- Scott Moser <smoser@ubuntu.com>  Wed, 06 Aug 2014 16:58:36 -0400
+ -- Scott Moser <smoser@ubuntu.com>  Fri, 16 Jan 2015 11:28:35 -0500
 
 cloud-initramfs-tools (0.25ubuntu1) trusty; urgency=medium
 

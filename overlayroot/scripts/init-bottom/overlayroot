@@ -557,10 +557,18 @@ log_warn "configuring overlayroot with mode=$mode opts='$opts' per $used_desc"
 overlayroot_driver=${overlayroot_driver:-overlayfs}
 
 # settings based on overlayroot_driver
+workdir=""
 case "${overlayroot_driver}" in
 	overlayfs)
 		mount_type="overlayfs"
 		mount_opts="-o lowerdir=${root_ro},upperdir=${root_rw}/${dir_prefix}"
+		# 3.18+ require 'workdir=' option.
+		case "$(uname -r)" in
+			2*|3.1[01234567]*|3.[0-9].*) :;;
+			*)
+				workdir="${dir_prefix%/}-workdir"
+				mount_opts="${mount_opts},workdir=${root_rw}/${workdir}";;
+		esac
 		mount_opts="${mount_opts} overlayroot ${ROOTMNT}"
 		;;
 	aufs)
@@ -598,6 +606,9 @@ fi
 
 mkdir -p "${root_rw}/${dir_prefix}" ||
 	fail "failed to create ${dir_prefix} on ${device}"
+
+[ -z "$workdir" ] || mkdir -p "$root_rw/${workdir}" ||
+	fail "failed to create workdir '$workdir' on ${device}"
 
 # root is mounted on ${ROOTMNT}, move it to ${ROOT_RO}.
 mount --move "${ROOTMNT}" "${root_ro}" ||
