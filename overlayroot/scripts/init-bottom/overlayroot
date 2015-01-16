@@ -620,9 +620,11 @@ mount --move "${ROOTMNT}" "${root_ro}" ||
 # errors and leave the system in a wired state. 
 
 # mount virtual fs ${ROOTMNT} with rw-fs ${root_rw} on top or ro-fs ${root_ro}.
+debug mount -t "$mount_type" $mount_opts
 mount -t "$mount_type" $mount_opts
 if [ $? -ne 0 ]; then
 	log_fail "failed to create new ro/rw layered ${ROOTMNT}"
+	log_fail "mount command was: mount -t $mount_type $mount_opts"
 	# do recovery and try resoring the mount for ${ROOTMNT}
 	mount --move ${root_ro} ${ROOTMNT}
 	if [ $? -ne 0 ]; then
