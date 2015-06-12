@@ -1,0 +1,49 @@
+#!/bin/sh
+
+PREREQ=""
+case $1 in
+    prereqs) echo "${PREREQS}"; exit 0;;
+esac
+
+VERBOSITY="1"
+
+debug() {
+	local v=$1
+	shift
+	[ $v -lt $VERBOSITY ] && return 0
+	echo "::" "$@"
+}
+
+mount_tar() {
+	local target="$1" urls="$2" url=""
+	[ -d "$target" ] || mkdir -p "$target" || return
+	mount -t tmpfs root_url "$target" || return
+
+	local oifs="$IFS"
+	IFS=","; set -- $urls; IFS="$oifs"
+
+	for url in "$@"; do
+		debug 1 "# $url"
+		wget "$url" -O - | tar -C "$target" -xpzf -
+	done
+	[ -x "$target/sbin" ]
+}
+
+. /scripts/functions
+
+case "$ROOT" in
+	http://*) :;;
+	*) exit 0
+esac
+configure_networking || exit
+
+debug 1 "root=$ROOT"
+mount_tar "${rootmnt}.tmp" "$ROOT" || exit
+
+{
+	echo 'ROOTFSTYPE="root_url"'
+	echo 'ROOTFLAGS="-o move"'
+	echo "ROOT=\"$rootmnt.tmp\""
+} > /conf/param.conf
+
+# vi: ts=4 noexpandtab

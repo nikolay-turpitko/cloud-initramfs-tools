@@ -1,0 +1,22 @@
+#!/bin/sh
+set -e
+
+PREREQS=""
+case $1 in
+    prereqs) echo "${PREREQS}"; exit 0;;
+esac
+
+. /usr/share/initramfs-tools/hook-functions
+
+needs="tar" #gzip gunzip"
+for need in $needs; do fp=$(which $need) && copy_exec "$fp" /bin; done
+
+## this is messed up, but if we put these in /bin, then
+## /usr/share/initramfs-tools/hooks/busybox will actually remove them.
+## 
+## the busybox versions are sufficient for our needs.
+bbox="gzip gunzip"
+[ -d "$DESTDIR/sbin" ] || mkdir -p "$DESTDIR/sbin"
+for need in $bbox; do ln -sf ../bin/busybox "$DESTDIR/sbin/$need"; done
+
+# vi: ts=4 noexpandtab

@@ -1,0 +1,2 @@
+usr/share/initramfs-tools/hooks/tarroot
+usr/share/initramfs-tools/scripts/*/tarroot
