@@ -17,6 +17,7 @@
 
 prereqs() {
 	local o="/scripts/init-bottom/overlayroot"  p=""
+	# basically we run after overlayroot but do not depend on it
 	for p in "$DESTDIR/" ""; do
 		[ -e "$p$o" ] && echo "overlayroot" && return 0
 	done
@@ -41,7 +42,7 @@ fi
 myver=$(uname -r)
 
 if [ ! -d "/lib/modules/$myver" ]; then
-	log_warning_msg "Something odd, no /lib/modules/$myver."
+	log_warning_msg "Something odd, no /lib/modules/$myver in initramfs."
 	exit 0
 fi
 
@@ -50,7 +51,6 @@ fi
 
 if [ -d "$rootmnt/lib/modules/$myver" ]; then
 	if [ "${myopts#*force}" = "$myopts" ]; then
-		log_warning_msg "Modules existed for $myver in target. use copymods=force."
 		exit 0
 	else
 		log_warning_msg "copying over existing modules! due to copymods=force"
