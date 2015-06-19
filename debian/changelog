@@ -2,6 +2,8 @@ cloud-initramfs-tools (0.27ubuntu1) UNRELEASED; urgency=medium
 
   * cloud-initramfs-dyn-netconf: bring up networking if ip is on kernel
     command line and it has not been brought up (LP: #1463846)
+  * cloud-initramfs-copymods: do not warn to console if /lib/modules
+    exists in the target, as that is an expected case.
 
  -- Scott Moser <smoser@ubuntu.com>  Fri, 19 Jun 2015 13:14:42 -0400
 
