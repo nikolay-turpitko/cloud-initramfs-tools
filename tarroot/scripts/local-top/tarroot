@@ -47,7 +47,7 @@ mount_tar "${rootmnt}.tmp" "$ROOT" || exit
 
 {
 	echo 'ROOTFSTYPE="root_url"'
-	echo 'ROOTFLAGS="${ROOTFLAGS:+${ROOT_FLAGS} }-o move"'
+	echo 'ROOTFLAGS="${ROOTFLAGS:+${ROOTFLAGS} }-o move"'
 	echo "ROOT=\"$rootmnt.tmp\""
 } > /conf/param.conf
 
