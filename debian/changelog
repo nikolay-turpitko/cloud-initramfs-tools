@@ -1,3 +1,9 @@
+cloud-initramfs-tools (0.27ubuntu1+tarroot) UNRELEASED; urgency=medium
+
+  * add tarroot
+
+ -- Scott Moser <smoser@ubuntu.com>  Thu, 03 Mar 2016 09:17:59 -0500
+
 cloud-initramfs-tools (0.27ubuntu1) wily; urgency=medium
 
   * cloud-initramfs-dyn-netconf: bring up networking if ip is on kernel
