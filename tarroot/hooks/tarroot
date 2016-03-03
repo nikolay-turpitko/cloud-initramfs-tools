@@ -8,7 +8,7 @@ esac
 
 . /usr/share/initramfs-tools/hook-functions
 
-needs="tar" #gzip gunzip"
+needs="tar xz" #gzip gunzip"
 for need in $needs; do fp=$(which $need) && copy_exec "$fp" /bin; done
 
 ## this is messed up, but if we put these in /bin, then

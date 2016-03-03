@@ -22,9 +22,14 @@ mount_tar() {
 	local oifs="$IFS"
 	IFS=","; set -- $urls; IFS="$oifs"
 
+	local zopt=""
 	for url in "$@"; do
-		debug 1 "# $url"
-		wget "$url" -O - | tar -C "$target" -xpzf -
+        case "$url" in
+           *.tar.gz|*.tgz) zopt="z";;
+           *.tar.xz|*.txz) zopt="J";;
+        esac
+		debug 1 "# [$zopt] $url"
+		wget "$url" -O - | tar -C "$target" -xp${zopt}f -
 	done
 	[ -x "$target/sbin" ]
 }
@@ -42,7 +47,7 @@ mount_tar "${rootmnt}.tmp" "$ROOT" || exit
 
 {
 	echo 'ROOTFSTYPE="root_url"'
-	echo 'ROOTFLAGS="-o move"'
+	echo 'ROOTFLAGS="${ROOTFLAGS:+${ROOT_FLAGS} }-o move"'
 	echo "ROOT=\"$rootmnt.tmp\""
 } > /conf/param.conf
 
