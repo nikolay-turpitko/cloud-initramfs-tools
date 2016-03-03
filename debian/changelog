@@ -1,3 +1,12 @@
+cloud-initramfs-tools (0.27ubuntu1) wily; urgency=medium
+
+  * cloud-initramfs-dyn-netconf: bring up networking if ip is on kernel
+    command line and it has not been brought up (LP: #1463846)
+  * cloud-initramfs-copymods: do not warn to console if /lib/modules
+    exists in the target, as that is an expected case.
+
+ -- Scott Moser <smoser@ubuntu.com>  Tue, 23 Jun 2015 12:46:29 -0400
+
 cloud-initramfs-tools (0.26ubuntu1) vivid; urgency=medium
 
   * cloud-initramfs-dyn-netconf: support BOOTIF= that contains
