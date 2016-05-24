@@ -1,0 +1,27 @@
+#!/bin/sh
+set -e
+
+prereqs() {
+	local o="/scripts/init-bottom/overlayroot"  p=""
+	for p in "$DESTDIR/" ""; do
+		[ -e "$p$o" ] && echo "overlayroot" && return 0
+	done
+}
+
+[ "$1" = "prereqs" ] && { prereqs; exit; }
+
+. /usr/share/initramfs-tools/hook-functions
+
+needs="tar xz" #gzip gunzip"
+for need in $needs; do fp=$(which $need) && copy_exec "$fp" /bin; done
+
+
+## this is messed up, but if we put these in /bin, then
+## /usr/share/initramfs-tools/hooks/busybox will actually remove them.
+## 
+## the busybox versions are sufficient for our needs.
+bbox="gzip gunzip"
+[ -d "$DESTDIR/sbin" ] || mkdir -p "$DESTDIR/sbin"
+for need in $bbox; do ln -sf ../bin/busybox "$DESTDIR/sbin/$need"; done
+
+# vi: ts=4 noexpandtab

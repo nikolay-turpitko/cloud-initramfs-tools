@@ -1,0 +1,98 @@
+#!/bin/sh
+#  Copyright, 2014 Scott Moser <smoser@ubuntu.com>
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see
+#    <http://www.gnu.org/licenses/>.
+VERBOSITY="1"
+
+prereqs() {
+	local o="/scripts/init-bottom/overlayroot"  p=""
+	# basically we run after overlayroot but do not depend on it
+	for p in "$DESTDIR/" ""; do
+		[ -e "$p$o" ] && echo "overlayroot" && return 0
+	done
+}
+
+[ "$1" != "prereqs" ] || { prereqs; exit; }
+
+debug() {
+	local v=$1
+	shift
+	[ $v -lt $VERBOSITY ] && return 0
+	echo "::" "$@"
+}
+
+extract_urls() {
+	local target="$1" url="" zopt=""
+	shift
+	for url in "$@"; do
+		case "$url" in
+			*.tar.gz|*.tgz) zopt="z";;
+			*.tar.xz|*.txz) zopt="J";;
+			*) zopt="";;
+		esac
+		debug 1 "# updateroot [$zopt] $url"
+		wget "$url" -O - | tar -C "$target" -xp${zopt}f -
+	done
+	if [ -x "$target/.updateroot" ]; then
+		local script
+		set +f
+		for script in "$target/.updateroot/"*; do
+			[ -f "$script" -a -x "$script" ] || continue
+			debug "running ${script#$target} in target root"
+			chroot "$target" "${script#$target}"
+		done
+	fi
+}
+
+apply_overroot() {
+	local cmdline urls
+	if ! read cmdline < /proc/cmdline; then
+		log_warn "no /proc/cmdline?"
+		return 1
+	fi
+	set -f
+	for tok in $cmdline; do
+		case "$tok" in
+			updateroot=http://*) urls="${urls} ${tok#*=}";;
+		esac
+	done
+	set +f
+	urls=${urls# }
+	if [ -z "$urls" ]; then
+		debug 1 "no updateroot urls configured in cmdline"
+		return 0
+	fi
+
+	if ! configure_networking; then
+		log_warn "failed configuring networking"
+		return 1
+	fi
+
+	# TODO: only remount rw if not already rw
+	if mount -o remount,rw "$rootmnt"; then
+		set -f
+		extract_urls "$rootmnt" $urls
+		set +f
+		mount -o remount,ro "$rootmnt"
+	fi
+
+}
+
+. /scripts/functions
+
+apply_overroot
+
+exit 0 
+# vi: ts=4 noexpandtab
