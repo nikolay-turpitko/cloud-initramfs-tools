@@ -77,12 +77,12 @@ Description: copy initramfs modules into root filesystem for later use
  This package arranges for the modules in the initramfs to be placed
  into /lib/modules after the switchroot is done.
 
-Package: cloud-initramfs-tarroot
+Package: cloud-initramfs-rooturl
 Architecture: all
 Depends: initramfs-tools,
          ${misc:Depends},
          ${shlibs:Depends}
-Description: use a tarball in a url as the root filesystem
+Description: use a tarball or squashfs image in a url as the root filesystem
  Allows user to pass in root=http://example.com/your.tar.gz
  Root filesystem will be tmpfs from that url.
 
