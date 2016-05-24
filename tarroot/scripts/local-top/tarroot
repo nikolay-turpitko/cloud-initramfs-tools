@@ -16,11 +16,7 @@ debug() {
 
 mount_tar() {
 	local target="$1" urls="$2" url=""
-	[ -d "$target" ] || mkdir -p "$target" || return
 	mount -t tmpfs ${ROOTFLAGS} root_url "$target" || return
-
-	local oifs="$IFS"
-	IFS=","; set -- $urls; IFS="$oifs"
 
 	local zopt=""
 	for url in "$@"; do
@@ -34,16 +30,51 @@ mount_tar() {
 	[ -x "$target/sbin" ]
 }
 
+mount_squash() {
+	local target="$1" url="$2"
+	if [ $# -gt 2 ]; then
+		log_warn "too many arguments to mount_squash: $*"
+		return 1
+	fi
+    debug 1 "mount_sqush downlading $url to $target.img"
+	wget "$url" -O "$target.img"
+	debug 1 "mount -t squashfs -o loop ${ROOTFLAGS}" \
+        "'$target.img' '$target'"
+	mount -t squashfs -o loop ${ROOTFLAGS} \
+        "$target.img" "$target" || return
+}
+
+mount_url() {
+	local target="$1" urls="$2" firsturl="" helper=""
+	local oifs="$IFS"
+	IFS=","; set -- $urls; IFS="$oifs"
+	firsturl="$1"
+	shift
+
+	case "$firsturl" in
+		tar:http*) helper=mount_tar; firsturl="${firsturl#*:}";;
+		squash:http*) helper=mount_squash; firsturl="${firsturl#*:}";;
+		*.tar.??|*.t?z) helper=mount_tar;;
+		*.squash|*.squashfs) helper=mount_squash;;
+	esac
+	if [ -z "$helper" ]; then
+		log_warn "no helper identified for '$firsturl'"
+		return 1
+	fi
+	[ -d "$target" ] || mkdir -p "$target" || return
+	"$helper" "$target" "$firsturl" "$@"
+}
+
 . /scripts/functions
 
 case "$ROOT" in
-	http://*) :;;
+	http://*|*:http://*) :;;
 	*) exit 0
 esac
 configure_networking || exit
 
 debug 1 "root=$ROOT"
-mount_tar "${rootmnt}.tmp" "$ROOT" || exit
+mount_url "${rootmnt}.tmp" "$ROOT" || exit
 
 {
 	echo 'ROOTFSTYPE="root_url"'

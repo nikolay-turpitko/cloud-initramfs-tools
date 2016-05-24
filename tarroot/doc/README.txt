@@ -12,3 +12,12 @@ sets the root password for login.
 
 An example kernel command line might look like:
    root=http://192.168.1.131:9999/core.tar.gz,http://192.168.1.131:9999/root-passwd.tar.gz
+
+
+Adding squashfs support, we can now do:
+  qemu-system-x86_64 -enable-kvm 
+     -device virtio-net-pci,netdev=net00 \
+     -netdev type=user,id=net00 \
+     -m 1G -nographic \
+     -kernel kernel -initrd initrd \
+     -append "root=http://10.0.2.2:9999/xenial-server-cloudimg-amd64.squashfs console=ttyS0 -v overlayroot=tmpfs break=bottom,init
