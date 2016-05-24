@@ -1,8 +1,14 @@
 updateroot is an initramfs module that allows you to update
 the root filesystem before changing to it.
 
-It supports multiple urls to allow for use of a single
-base root with changing secondary roots.
+Each updateroot= on the kernel command line will be downloaded
+and extracted over the top of the root filesystem.  Support is
+present for gzip, xz or no compression as long as urls end in
+.tar.gz, .tgz, .tar.xz, .txz or .tar.
+
+Any files in a .updateroot/ directory inside the tarball that
+are executable will be executed inside the target before
+init is started.
 
 To demo this, first install the cloud-initramfs-updateroot and
 cloud-initramfs-rooturl packages.  That will update your initramfs
