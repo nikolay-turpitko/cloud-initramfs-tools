@@ -1,3 +1,10 @@
+cloud-initramfs-tools (0.28ubuntu1) UNRELEASED; urgency=medium
+
+  * write debug to /run/initramfs not /dev/.initramfs but support
+    writing to /dev/.initramfs if that is all there is. (LP: #1485752)
+
+ -- Scott Moser <smoser@ubuntu.com>  Thu, 01 Sep 2016 16:43:29 -0400
+
 cloud-initramfs-tools (0.27ubuntu1) wily; urgency=medium
 
   * cloud-initramfs-dyn-netconf: bring up networking if ip is on kernel

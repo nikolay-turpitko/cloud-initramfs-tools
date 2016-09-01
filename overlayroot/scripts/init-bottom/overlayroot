@@ -67,11 +67,20 @@ debug() {
 	echo "$MYTAG:" "$@"
 }
 _debug() {
-	if [ "${DEBUG_BUSTED:-0}" = "0" ]; then
-		{ echo "$@" >> "/dev/.initramfs/${MYTAG}.log"; } 2>/dev/null ||
+	local d
+	if [ -z "$DEBUG_DIR" ]; then
+		for d in /run/initramfs /dev/.initramfs; do
+			[ -d "$d" ] && DEBUG_DIR="$d" && break
+		done
+		[ -z "$DEBUG_DIR" ] && DEBUG_BUSTED=1 && DEBUG_DIR="busted" &&
+			log_warn "debug is busted. no debug dir"
+	fi
+	if [ "${DEBUG_BUSTED:-0}" ]; then
+		{ echo "$@" >> "${DEBUG_DIR}/${MYTAG}.log"; } 2>/dev/null ||
 			{ DEBUG_BUSTED=1; log_warn "debug is busted"; }
 	fi
 }
+
 safe_string() {
 	local prev="$1" allowed="$2" cur=""
 	[ -n "$prev" ] || return 1
