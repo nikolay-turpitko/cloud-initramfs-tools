@@ -608,13 +608,14 @@ log_warn "configuring overlayroot with mode=$mode opts='$opts' per $used_desc"
 
 # overlayroot_driver *could* be defined in one of the configs above
 # but we're not documenting that.
-overlayroot_driver=${overlayroot_driver:-overlayfs}
+#overlayroot_driver=${overlayroot_driver:-overlayfs}
+overlayroot_driver=${overlayroot_driver:-overlay}
 
 # settings based on overlayroot_driver
 workdir=""
 case "${overlayroot_driver}" in
-	overlayfs)
-		mount_type="overlayfs"
+	overlayfs|overlay)
+		mount_type="${overlayroot_driver}"
 		mount_opts="-o lowerdir=${root_ro},upperdir=${root_rw}/${dir_prefix}"
 		if needs_workdir; then
 			workdir="${dir_prefix%/}-workdir"
@@ -725,7 +726,7 @@ mount --move "${root_rw}" "${ROOTMNT}${root_rw}" ||
 # ${ROOTMNT}${root_ro}/etc/fstab.
 cat <<EOF >${ROOTMNT}/etc/fstab
 #
-#  This fstab is in an overlayfs.  The real one can be found at
+#  This fstab is in an ${overlayroot_driver}. The real one can be found at
 #  ${root_ro}/etc/fstab
 #  The original entry for '/' and other mounts have been updated to be placed
 #  under $root_ro.
@@ -737,7 +738,8 @@ EOF
 
 [ $? -eq 0 ] || log_fail "failed to modify /etc/fstab (step 1)"
 overlayrootify_fstab ""${ROOTMNT}${root_ro}/etc/fstab"" "$root_ro" \
-	"$root_rw" "$dir_prefix" "$recurse" "$swap" >> "${ROOTMNT}/etc/fstab" ||
+	"$root_rw" "$dir_prefix" "$recurse" "$swap" "${overlayroot_driver}" \
+	>> "${ROOTMNT}/etc/fstab" ||
 	log_fail "failed to modify /etc/fstab (step 2)"
 
 # we have to make the directories in ${root_rw} because if they do not
