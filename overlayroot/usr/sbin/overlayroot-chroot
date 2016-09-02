@@ -31,7 +31,10 @@ info() {
 }
 
 get_lowerdir() {
-	overlay=$(grep -m1 "^overlayroot / overlayfs " /proc/mounts) || overlay=
+	local overlay=""
+	overlay=$(awk '
+		$1 == "overlayroot" && $2 == "/" && $3 ~ /overlay/ { print $0 }' \
+		/proc/mounts)
 	if [ -n "${overlay}" ]; then
 		lowerdir=${overlay##*lowerdir=}
 		lowerdir=${lowerdir%%,*}
