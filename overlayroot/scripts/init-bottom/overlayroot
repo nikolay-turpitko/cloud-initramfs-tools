@@ -267,20 +267,29 @@ dev_setup() {
 	_RET_DEVICE="$dev"
 }
 
+clean_path() {
+	local p="$1" tmp=""
+	while [ "${p#*//}" != "$p" ]; do
+		tmp=${p#*//}
+		p="${p%%//*}/${tmp}"
+	done
+	_RET="$p"
+}
+
 overlayrootify_fstab() {
 	# overlayrootify_fstab(input, root_ro, root_rw, dir_prefix, recurse, swap)
 	# read input fstab file, write an overlayroot version to stdout
 	# also returns (_RET) a list of directories that will need to be made
 	local input="$1" root_ro="${2:-/media/root-ro}"
 	local root_rw="${3:-/media/root-rw}" dir_prefix="${4:-/}"
-	local recurse=${5:-1} swap=${6:-0}
+	local recurse=${5:-1} swap=${6:-0} fstype=${7:-overlayfs}
 	local hash="#" oline="" ospec="" upper="" dirs="" copy_opts=""
-	local vfstypes=" proc sys tmpfs dev udev "
 	local spec file vfstype opts pass freq line ro_line
+	local workdir="" use_orig="" relfile="" needs_workdir=false
 	
-	dir_prefix="${dir_prefix#/}"
-
 	[ -f "$input" ] || return 1
+
+	needs_workdir && needs_workdir=true || needs_workdir=false
 	while read spec file vfstype opts pass freq; do
 		line="$spec $file $vfstype $opts $pass $freq"
 		case ",$opts," in
@@ -288,21 +297,34 @@ overlayrootify_fstab() {
 			*) ro_opts="ro,${opts}";;
 		esac
 		ro_line="$spec ${root_ro}$file $vfstype ${ro_opts} $pass $freq"
-		if [ "${spec#${hash}}" != "$spec" ] ||
-		   [ -z "$freq" ]; then
-			# line has a comment in first field, or not 6 fields
-			echo "$line"
-		elif [ "${vfstypes# *${vfstype} }" != "${vfstypes}" ]; then
-			# this is a virtual filesystem, just let it through
-			echo "${line}"
+
+		use_orig=""
+		if [ "${spec#${hash}}" != "$spec" ]; then
+			use_orig="comment"
+		elif [ -z "$freq" ]; then
+			use_orig="malformed-line"
+		else
+			case "$vfstype" in
+				vfat|fat) use_orig="fs-unsupported";;
+				proc|sys|tmpfs|dev|udev) use_orig="fs-virtual";;
+			esac
+		fi
+
+		rel_file=${file#/}
+		if [ -n "$use_orig" ]; then
+			if [ "$use_orig" != "comment" ]; then
+				echo "$line # $MYTAG:$use_orig"
+			else
+				echo "$line"
+			fi
 		elif [ "$vfstype" = "swap" ]; then
 			if [ "$swap" = "0" ]; then
 				# comment out swap lines
-				echo "#overlayroot:swap=${swap}#${line}"
+				echo "#$MYTAG:swap=${swap}#${line}"
 			elif [ "${spec#/}" != "${spec}" ] &&
 			     [ "${spec#/dev/}" = "${spec}" ]; then
 				# comment out swap files (spec starts with / and not in /dev)
-				echo "#overlayroot:swapfile#${line}"
+				echo "#$MYTAG:swapfile#${line}"
 			else
 				echo "${line}"
 			fi
@@ -311,10 +333,20 @@ overlayrootify_fstab() {
 			copy_opts=""
 			[ "${opts#*nobootwait*}" != "${opts}" ] &&
 				copy_opts=",nobootwait"
-			upper="${root_rw%/}/${dir_prefix%/}${file%/}"
+			clean_path "${root_rw}/${dir_prefix}${file}"
+			upper="$_RET"
+
 			oline="${ospec} ${file} overlayfs "
-			oline="${oline}lowerdir=${root_ro}${file},"
-			oline="${oline}upperdir=${upper}${copy_opts} $pass $freq"
+			clean_path "${root_ro}${file}"
+			oline="${oline}lowerdir=$_RET"
+			oline="${oline},upperdir=${upper}${copy_opts}"
+			if [ "$fstype" = "overlayfs" ] && ${needs_workdir}; then
+				clean_path "${root_rw}/${dir_prefix}/${file%/}-workdir"
+				workdir="$_RET"
+				oline="${oline},workdir=$workdir"
+				dirs="${dirs} $workdir"
+			fi
+ 			oline="${oline} $pass $freq"
 
 			if [ "$recurse" != "0" ]; then
 				echo "$ro_line"
@@ -455,6 +487,19 @@ fix_upstart_overlayfs() {
 	debug "created $eifile under $root (LP: #1213925)"
 }
 
+needs_workdir() {
+	local uname_r="${UNAME_R}"
+	if [ -z "$uname_r" ]; then
+		uname_r=$(uname -r) && UNAME_R="$uname_r" ||
+			{ log_warn "failed to read uname!"; return 2; }
+	fi
+	# 3.18+ require 'workdir=' option.
+	case "${uname_r}" in
+		2*|3.1[01234567]*|3.[0-9].*) return 1;;
+		*) return 0;;
+	esac
+}
+
 cfgd="${TEMP_D}/configs"
 mkdir -p "${cfgd}" || fail "failed to create tempdir"
 trap cleanup EXIT
@@ -571,13 +616,10 @@ case "${overlayroot_driver}" in
 	overlayfs)
 		mount_type="overlayfs"
 		mount_opts="-o lowerdir=${root_ro},upperdir=${root_rw}/${dir_prefix}"
-		# 3.18+ require 'workdir=' option.
-		case "$(uname -r)" in
-			2*|3.1[01234567]*|3.[0-9].*) :;;
-			*)
-				workdir="${dir_prefix%/}-workdir"
-				mount_opts="${mount_opts},workdir=${root_rw}/${workdir}";;
-		esac
+		if needs_workdir; then
+			workdir="${dir_prefix%/}-workdir"
+			mount_opts="${mount_opts},workdir=${root_rw}/${workdir}"
+		fi
 		mount_opts="${mount_opts} overlayroot ${ROOTMNT}"
 		;;
 	aufs)

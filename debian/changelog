@@ -1,7 +1,9 @@
 cloud-initramfs-tools (0.28ubuntu1) UNRELEASED; urgency=medium
 
-  * write debug to /run/initramfs not /dev/.initramfs but support
-    writing to /dev/.initramfs if that is all there is. (LP: #1485752)
+  * overlayroot: write debug to /run/initramfs not /dev/.initramfs but
+    support writing to /dev/.initramfs if that is all there is. (LP: #1485752)
+  * overlayroot: fix overlayroot if recurse=0 was not provided.
+    This fuctionality was lost since workdir support was added. (LP: #1619459)
 
  -- Scott Moser <smoser@ubuntu.com>  Thu, 01 Sep 2016 16:43:29 -0400
 
