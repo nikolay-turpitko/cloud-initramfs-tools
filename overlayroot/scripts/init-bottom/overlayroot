@@ -595,21 +595,42 @@ swap=${_RET_common_swap:-0}
 recurse=${_RET_common_recurse:-1}
 OVERLAYROOT_DEBUG=${_RET_common_debug:-${OVERLAYROOT_DEBUG}}
 dir_prefix=${_RET_common_dir:-"/overlay"}
+overlayroot_driver=${_RET_common_overlayroot_driver}
+
+# overlayroot_driver *could* be defined in one of the configs above
+# but we're not documenting that.
+module_loaded=false
+if [ -z "$overlayroot_driver" ]; then
+	for m in overlayfs overlay; do
+        grep -q "$m$" /proc/filesystems &&
+			overlayroot_driver="$m" && module_loaded=true && break
+    done
+	if [ -z "$overlayroot_driver" ]; then
+		for m in overlay overlayfs; do
+			modprobe -qb "$m" &&
+				overlayroot_driver="$m" && module_loaded=true && break
+		done
+	fi
+fi
+
+if [ -z "$overlayroot_driver" ]; then
+	fail "Unable to find functional kernel module"
+elif ! $module_loaded; then
+	if ! grep "${overlayroot_driver}$" /proc/filesystems; then
+		modprobe -qb "${overlayroot_driver}" ||
+			fail "failed to load module ${overlayroot_driver}."
+	fi
+fi
 
 debug "swap=$swap recurse=$recurse debug=$OVERLAYROOT_DEBUG dir=$dir_prefix"
-debug "device=$device mode=$mode"
+debug "device=$device mode=$mode driver=${overlayroot_driver}"
 
 [ "$swap" = "0" -o "$swap" = "1" ] ||
 	fail "invalid setting for swap: $swap. must be '0' or '1'"
 [ "$recurse" = "0" -o "$recurse" = "1" ] ||
 	fail "invalid setting for recurse: $recurse. must be '0' or '1'"
 
-log_warn "configuring overlayroot with mode=$mode opts='$opts' per $used_desc"
-
-# overlayroot_driver *could* be defined in one of the configs above
-# but we're not documenting that.
-#overlayroot_driver=${overlayroot_driver:-overlayfs}
-overlayroot_driver=${overlayroot_driver:-overlay}
+log_warn "configuring overlayroot with driver=${overlayroot_driver} mode=$mode opts='$opts' per $used_desc"
 
 # settings based on overlayroot_driver
 workdir=""
@@ -632,10 +653,6 @@ case "${overlayroot_driver}" in
 		panic "$MYTAG"
 		;;
 esac
-
-# check if kernel module exists 
-modprobe -qb "${overlayroot_driver}" ||
-	fail "missing kernel module ${overlayroot_driver}"
 
 # make the mount point on the init root fs ${root_rw}
 mkdir -p "${root_rw}" ||
