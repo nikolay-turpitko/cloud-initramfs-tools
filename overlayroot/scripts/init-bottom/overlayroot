@@ -595,18 +595,18 @@ swap=${_RET_common_swap:-0}
 recurse=${_RET_common_recurse:-1}
 OVERLAYROOT_DEBUG=${_RET_common_debug:-${OVERLAYROOT_DEBUG}}
 dir_prefix=${_RET_common_dir:-"/overlay"}
-overlayroot_driver=${_RET_common_overlayroot_driver}
+overlayroot_driver=${_RET_common_driver}
 
 # overlayroot_driver *could* be defined in one of the configs above
 # but we're not documenting that.
 module_loaded=false
 if [ -z "$overlayroot_driver" ]; then
-	for m in overlayfs overlay; do
+	for m in overlay overlayfs; do
         grep -q "$m$" /proc/filesystems &&
 			overlayroot_driver="$m" && module_loaded=true && break
     done
 	if [ -z "$overlayroot_driver" ]; then
-		for m in overlay overlayfs; do
+		for m in overlayfs overlay; do
 			modprobe -qb "$m" &&
 				overlayroot_driver="$m" && module_loaded=true && break
 		done
