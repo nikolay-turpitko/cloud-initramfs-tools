@@ -606,7 +606,7 @@ if [ -z "$overlayroot_driver" ]; then
 			overlayroot_driver="$m" && module_loaded=true && break
     done
 	if [ -z "$overlayroot_driver" ]; then
-		for m in overlayfs overlay; do
+		for m in overlay overlayfs; do
 			modprobe -qb "$m" &&
 				overlayroot_driver="$m" && module_loaded=true && break
 		done
