@@ -340,7 +340,8 @@ overlayrootify_fstab() {
 			clean_path "${root_ro}${file}"
 			oline="${oline}lowerdir=$_RET"
 			oline="${oline},upperdir=${upper}${copy_opts}"
-			if [ "$fstype" = "overlayfs" ] && ${needs_workdir}; then
+			if [ "$fstype" = "overlayfs" -o "$fstype" = "overlay" ] &&
+				${needs_workdir}; then
 				clean_path "${root_rw}/${dir_prefix}/${file%/}-workdir"
 				workdir="$_RET"
 				oline="${oline},workdir=$workdir"
