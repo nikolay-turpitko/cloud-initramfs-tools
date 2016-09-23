@@ -268,12 +268,22 @@ dev_setup() {
 }
 
 clean_path() {
+	# remove '//' in a path.
 	local p="$1" tmp=""
 	while [ "${p#*//}" != "$p" ]; do
 		tmp=${p#*//}
 		p="${p%%//*}/${tmp}"
 	done
 	_RET="$p"
+}
+
+get_workdir() {
+	local root_rw="$1" dir_prefix="$2" file="$3"
+	file=${file%/}
+	if [ "$file" = "/" -o "$file" = "" ]; then
+		file="_"
+	fi
+	clean_path "${root_rw}/${dir_prefix%/}-workdir/${file}"
 }
 
 overlayrootify_fstab() {
@@ -342,7 +352,7 @@ overlayrootify_fstab() {
 			oline="${oline},upperdir=${upper}${copy_opts}"
 			if [ "$fstype" = "overlayfs" -o "$fstype" = "overlay" ] &&
 				${needs_workdir}; then
-				clean_path "${root_rw}/${dir_prefix}/${file%/}-workdir"
+				get_workdir "$root_rw" "$dir_prefix" "$file"
 				workdir="$_RET"
 				oline="${oline},workdir=$workdir"
 				dirs="${dirs} $workdir"
@@ -654,8 +664,9 @@ case "${overlayroot_driver}" in
 		mount_type="${overlayroot_driver}"
 		mount_opts="-o lowerdir=${root_ro},upperdir=${root_rw}/${dir_prefix}"
 		if needs_workdir; then
-			workdir="${dir_prefix%/}-workdir"
-			mount_opts="${mount_opts},workdir=${root_rw}/${workdir}"
+			get_workdir "$root_rw" "$dir_prefix" "/"
+			workdir="$_RET"
+			mount_opts="${mount_opts},workdir=$workdir"
 		fi
 		mount_opts="${mount_opts} overlayroot ${ROOTMNT}"
 		;;
@@ -691,7 +702,7 @@ fi
 mkdir -p "${root_rw}/${dir_prefix}" ||
 	fail "failed to create ${dir_prefix} on ${device}"
 
-[ -z "$workdir" ] || mkdir -p "$root_rw/${workdir}" ||
+[ -z "$workdir" ] || mkdir -p "$workdir" ||
 	fail "failed to create workdir '$workdir' on ${device}"
 
 # root is mounted on ${ROOTMNT}, move it to ${ROOT_RO}.
@@ -709,7 +720,7 @@ mount -t "$mount_type" $mount_opts
 if [ $? -ne 0 ]; then
 	log_fail "failed to create new ro/rw layered ${ROOTMNT}"
 	log_fail "mount command was: mount -t $mount_type $mount_opts"
-	# do recovery and try resoring the mount for ${ROOTMNT}
+	# do recovery and try restoring the mount for ${ROOTMNT}
 	mount --move ${root_ro} ${ROOTMNT}
 	if [ $? -ne 0 ]; then
 		# thats bad, drop to shell to let the user try fixing this
