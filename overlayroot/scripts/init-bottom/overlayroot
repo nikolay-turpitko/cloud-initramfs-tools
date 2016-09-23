@@ -346,7 +346,7 @@ overlayrootify_fstab() {
 			clean_path "${root_rw}/${dir_prefix}${file}"
 			upper="$_RET"
 
-			oline="${ospec} ${file} overlayfs "
+			oline="${ospec} ${file} $fstype "
 			clean_path "${root_ro}${file}"
 			oline="${oline}lowerdir=$_RET"
 			oline="${oline},upperdir=${upper}${copy_opts}"
@@ -668,7 +668,8 @@ case "${overlayroot_driver}" in
 			workdir="$_RET"
 			mount_opts="${mount_opts},workdir=$workdir"
 		fi
-		mount_opts="${mount_opts} overlayroot ${ROOTMNT}"
+		clean_path "${mount_opts} overlayroot ${ROOTMNT}"
+		mount_opts="$_RET"
 		;;
 	aufs)
 		mount_type="aufs"
