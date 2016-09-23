@@ -501,6 +501,29 @@ needs_workdir() {
 	esac
 }
 
+
+search_fs_driver() {
+	# search_fs_driver(driver1, driver2...)
+	# return the first supported filesystem driver in the list.
+	# if no drivers are provided, search default list.
+	# assumes that name in /proc/filesystems and module name are the same.
+	local loaded=false m="" driver=""
+	for m in "$@"; do
+    	grep -q "$m$" /proc/filesystems &&
+			driver="$m" && loaded=true && 
+			{ debug "/proc/filesystems support for '$m'"; break; }
+    done
+	if [ -z "$driver" ]; then
+		for m in "$@"; do
+			modprobe -qb "$m" && driver="$m" && loaded=true &&
+				{ debug "loaded driver '$m'"; break; }
+		done
+	fi
+	[ -n "$driver" ] ||
+		{ debug "Unable to find driver/module. searched: $*"; return 1; }
+	_RET="$driver"
+}
+
 cfgd="${TEMP_D}/configs"
 mkdir -p "${cfgd}" || fail "failed to create tempdir"
 trap cleanup EXIT
@@ -598,29 +621,14 @@ OVERLAYROOT_DEBUG=${_RET_common_debug:-${OVERLAYROOT_DEBUG}}
 dir_prefix=${_RET_common_dir:-"/overlay"}
 overlayroot_driver=${_RET_common_driver}
 
-# overlayroot_driver *could* be defined in one of the configs above
-# but we're not documenting that.
-module_loaded=false
-if [ -z "$overlayroot_driver" ]; then
-	for m in overlay overlayfs; do
-        grep -q "$m$" /proc/filesystems &&
-			overlayroot_driver="$m" && module_loaded=true && break
-    done
-	if [ -z "$overlayroot_driver" ]; then
-		for m in overlay overlayfs; do
-			modprobe -qb "$m" &&
-				overlayroot_driver="$m" && module_loaded=true && break
-		done
-	fi
-fi
-
-if [ -z "$overlayroot_driver" ]; then
-	fail "Unable to find functional kernel module"
-elif ! $module_loaded; then
-	if ! grep "${overlayroot_driver}$" /proc/filesystems; then
-		modprobe -qb "${overlayroot_driver}" ||
-			fail "failed to load module ${overlayroot_driver}."
-	fi
+if [ "${overlayroot_driver:-auto}" = "auto" ]; then
+	search_fs_driver overlay overlayfs ||
+		fail "Unable to find a driver. searched: overlay overlayfs"
+	overlayroot_driver="$_RET"
+else
+	search_fs_driver ${overlayroot_driver} ||
+		fail "Unable to find a driver named '${overlayroot_driver}'"
+	overlayroot_driver="$_RET"
 fi
 
 debug "swap=$swap recurse=$recurse debug=$OVERLAYROOT_DEBUG dir=$dir_prefix"
