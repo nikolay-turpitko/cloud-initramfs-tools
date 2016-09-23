@@ -517,6 +517,7 @@ search_fs_driver() {
 			if modprobe -qb "$m"; then
 				if grep -q "${tab}$m$" /proc/filesystems; then
 					debug "loaded module '$m'";
+					driver="$m"
 					break;
 				else
 					log_warn "loaded '$m' module but no '$m' in /proc/filesystems"
