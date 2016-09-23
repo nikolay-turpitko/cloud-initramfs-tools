@@ -33,7 +33,7 @@ info() {
 get_lowerdir() {
 	local overlay=""
 	overlay=$(awk '
-		$1 == "overlayroot" && $2 == "/" && $3 ~ /overlay/ { print $0 }' \
+		$1 == "overlayroot" && $2 == "/" && { print $0 }' \
 		/proc/mounts)
 	if [ -n "${overlay}" ]; then
 		lowerdir=${overlay##*lowerdir=}
