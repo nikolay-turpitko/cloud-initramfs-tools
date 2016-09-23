@@ -507,16 +507,21 @@ search_fs_driver() {
 	# return the first supported filesystem driver in the list.
 	# if no drivers are provided, search default list.
 	# assumes that name in /proc/filesystems and module name are the same.
-	local loaded=false m="" driver=""
+	local m="" driver="" tab='	'
 	for m in "$@"; do
-    	grep -q "$m$" /proc/filesystems &&
-			driver="$m" && loaded=true && 
+    	grep -q "${tab}$m$" /proc/filesystems && driver="$m" && 
 			{ debug "/proc/filesystems support for '$m'"; break; }
     done
 	if [ -z "$driver" ]; then
 		for m in "$@"; do
-			modprobe -qb "$m" && driver="$m" && loaded=true &&
-				{ debug "loaded driver '$m'"; break; }
+			if modprobe -qb "$m"; then
+				if grep -q "${tab}$m$" /proc/filesystems; then
+					debug "loaded module '$m'";
+					break;
+				else
+					log_warn "loaded '$m' module but no '$m' in /proc/filesystems"
+				fi
+			fi
 		done
 	fi
 	[ -n "$driver" ] ||
