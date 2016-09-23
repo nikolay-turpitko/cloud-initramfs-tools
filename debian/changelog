@@ -1,3 +1,10 @@
+cloud-initramfs-tools (0.29ubuntu1) UNRELEASED; urgency=medium
+
+  * overlayroot: support 'overlay' filesystem explicitly rather than
+    relying on ubuntu specific kernel module 'overlayfs'.  (LP: #1493188)
+
+ -- Scott Moser <smoser@ubuntu.com>  Fri, 23 Sep 2016 15:01:55 -0400
+
 cloud-initramfs-tools (0.28ubuntu1) yakkety; urgency=medium
 
   * overlayroot: write debug to /run/initramfs not /dev/.initramfs but
