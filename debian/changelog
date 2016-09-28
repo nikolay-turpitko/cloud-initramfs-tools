@@ -1,3 +1,10 @@
+cloud-initramfs-tools (0.29ubuntu2) UNRELEASED; urgency=medium
+
+  [ Lamont Jones ]
+  * Add IPV6 support to cloud-initramfs-dyn-netconf.  (LP: #1621615)
+
+ -- Scott Moser <smoser@ubuntu.com>  Tue, 27 Sep 2016 16:07:48 -0600
+
 cloud-initramfs-tools (0.29ubuntu1) yakkety; urgency=medium
 
   * overlayroot: support 'overlay' filesystem explicitly rather than
