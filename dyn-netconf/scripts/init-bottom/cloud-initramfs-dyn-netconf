@@ -77,6 +77,8 @@ for f in /run/net-*.conf /tmp/net-*.conf; do
 
 	DEVICE=""; PROTO=""; IPV4ADDR=""; IPV4NETMASK=""; IPV4GATEWAY="";
 	IPV4DNS0=""; IPV4DNS1=""; DNSDOMAIN=""; DOMAINSEARCH=""; filename="";
+        IPV4PROTO=""; IPV6PROTO=""; IPV6ADDR=""; IPV6NETMASK="";
+        IPV6GATEWAY=""; IPV6DNS0=""; IPV6DNS1=""; IPV6DOMAINSEARCH="";
 	. "$f"
 
 	if [ -z "$DEVICE" ]; then
@@ -101,14 +103,28 @@ for f in /run/net-*.conf /tmp/net-*.conf; do
 		[ -n "$IPV4NETMASK" ] && printf "\t%s\n" "netmask $IPV4NETMASK"
 		[ -n "$IPV4GATEWAY" ] && printf "\t%s\n" "gateway $IPV4GATEWAY"
 	fi
+	if [ "$IPV6PROTO" = "dhcp" ]; then
+		echo "iface $DEVICE inet6 dhcp"
+	elif [ "$IPV6PROTO" = "static" ]; then
+		echo "iface $DEVICE inet6 static"
+		[ -n "$IPV6ADDR" ] && printf "\t%s\n" "address $IPV6ADDR"
+		[ -n "$IPV6NETMASK" ] && printf "\t%s\n" "netmask $IPV6NETMASK"
+		[ -n "$IPV6GATEWAY" ] && printf "\t%s\n" "gateway $IPV6GATEWAY"
+	fi
 	if [ -n "$IPV4DNS0" -a "$IPV4DNS0" != "0.0.0.0" ]; then
-		nsline="dns-nameservers ${IPV4DNS0}"
+		nsline="${IPV4DNS0}"
 		[ -n "$IPV4DNS1" -a "$IPV4DNS1" != "0.0.0.0" ] &&
 			nsline="${nsline} ${IPV4DNS1}"
-		printf "\t%s\n" "$nsline"
 	fi
-	[ -n "$DNSDOMAIN" -o -n "$DOMAINSEARCH" ] &&
-		printf "\t%s\n" "dns-search ${DNSDOMAIN} ${DOMAINSEARCH}"
+	if [ -n "$IPV6DNS0" -a "$IPV6DNS0" != "0.0.0.0" ]; then
+		nsline="${IPV6DNS0}"
+		[ -n "$IPV6DNS1" -a "$IPV6DNS1" != "0.0.0.0" ] &&
+			nsline="${nsline} ${IPV6DNS1}"
+	fi
+	[ -n "$nsline" ] && printf "\tdns-nameservers %s\n" "$nsline"
+	[ -n "$DNSDOMAIN" -o -n "$DOMAINSEARCH" -o -n $IPV6DOMAINSEARCH] &&
+		SEARCH=" ${DNSDOMAIN} ${DOMAINSEARCH} ${IPV6DOMAINSEARCH}" &&
+		printf "\tdns-search %s\n" "${SEARCH}"
 done >> "$tmpf"
 
 [ -d /run/network ] || mkdir /run/network
