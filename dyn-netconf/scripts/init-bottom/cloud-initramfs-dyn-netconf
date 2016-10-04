@@ -81,8 +81,8 @@ configure_net_if_needed() {
 	# broken in the event that BOOTIF is not found on the command line.
 	for f in /run/net-*.conf /tmp/net-*.conf; do
 		if [ -f "$f" ]; then
-                        return 0
-                fi
+			return 0
+		fi
 	done
 
 	configure_networking
@@ -112,8 +112,8 @@ for f in /run/net-*.conf /tmp/net-*.conf; do
 
 	DEVICE=""; PROTO=""; IPV4ADDR=""; IPV4NETMASK=""; IPV4GATEWAY="";
 	IPV4DNS0=""; IPV4DNS1=""; DNSDOMAIN=""; DOMAINSEARCH=""; filename="";
-        IPV4PROTO=""; IPV6PROTO=""; IPV6ADDR=""; IPV6NETMASK="";
-        IPV6GATEWAY=""; IPV6DNS0=""; IPV6DNS1=""; IPV6DOMAINSEARCH="";
+	IPV4PROTO=""; IPV6PROTO=""; IPV6ADDR=""; IPV6NETMASK="";
+	IPV6GATEWAY=""; IPV6DNS0=""; IPV6DNS1=""; IPV6DOMAINSEARCH="";
 	. "$f"
 
 	if [ -z "$DEVICE" ]; then
@@ -121,7 +121,7 @@ for f in /run/net-*.conf /tmp/net-*.conf; do
 		continue
 	fi
 	# If IPv6 is supported, we get both of these, and at least one of them
-        # is set.  If we get both, use IPv4.
+	# is set.  If we get both, use IPv4.
 	# Prior to that, PROTO was used, so we know it's IPv4 we want.
 	if [ -z "$IPV4PROTO" -a -z "$IPV6PROTO" ]; then
 		IPV4PROTO="$PROTO"
@@ -142,43 +142,43 @@ for f in /run/net-*.conf /tmp/net-*.conf; do
 	elif [ "$IPV4PROTO" = "static" ]; then
 		echo "iface $DEVICE inet static"
 		if [ -n "$IPV4ADDR" ]; then
-                        printf "\t%s\n" "address $IPV4ADDR"
-                else
-                        error "WARNING: $f static with no address"
-                fi
+			printf "\t%s\n" "address $IPV4ADDR"
+		else
+			error "WARNING: $f static with no address"
+		fi
 		if [ -n "$IPV4NETMASK" ]; then
-                        printf "\t%s\n" "netmask $IPV4NETMASK"
-                else
-                        error "WARNING: $f static with no netmask"
-                fi
+			printf "\t%s\n" "netmask $IPV4NETMASK"
+		else
+			error "WARNING: $f static with no netmask"
+		fi
 		if [ -n "$IPV4GATEWAY" ]; then
-                        printf "\t%s\n" "gateway $IPV4GATEWAY"
-                fi
+			printf "\t%s\n" "gateway $IPV4GATEWAY"
+		fi
 	elif [ "$IPV6PROTO" = "dhcp6" ]; then
 		echo "iface $DEVICE inet6 dhcp"
 	elif [ "$IPV6PROTO" = "static" ]; then
 		echo "iface $DEVICE inet6 static"
 		if [ -n "$IPV6ADDR" ]; then
-                        printf "\t%s\n" "address $IPV6ADDR"
-                else
-                        error "WARNING: $f static with no address"
-                fi
+			printf "\t%s\n" "address $IPV6ADDR"
+		else
+			error "WARNING: $f static with no address"
+		fi
 		if [ -n "$IPV6NETMASK" ]; then
-                        printf "\t%s\n" "netmask $IPV6NETMASK"
-                else
-                        error "WARNING: $f static with no netmask"
-                fi
+			printf "\t%s\n" "netmask $IPV6NETMASK"
+		else
+			error "WARNING: $f static with no netmask"
+		fi
 		if [ -n "$IPV6GATEWAY" ]; then
-                        printf "\t%s\n" "gateway $IPV6GATEWAY"
-                fi
+			printf "\t%s\n" "gateway $IPV6GATEWAY"
+		fi
 	fi
 
-        nsline=""
+	nsline=""
 	if [ -n "$IPV4DNS0" -a "$IPV4DNS0" != "0.0.0.0" ]; then
 		nsline="${IPV4DNS0}"
 		if [ -n "$IPV4DNS1" -a "$IPV4DNS1" = "0.0.0.0" ]; then
 			nsline="${nsline} ${IPV4DNS1}"
-                fi
+		fi
 	elif [ -n "$IPV6DNS0" ]; then
 		nsline="${nsline} ${IPV6DNS0}"
 		[ -z "$IPV6DNS1" ] || nsline="${nsline} ${IPV6DNS1}"
@@ -187,7 +187,7 @@ for f in /run/net-*.conf /tmp/net-*.conf; do
 	if [ -n "${DNSDOMAIN}${DOMAINSEARCH}${IPV6DOMAINSEARCH}" ]; then
 		SEARCH=" ${DNSDOMAIN} ${DOMAINSEARCH} ${IPV6DOMAINSEARCH}"
 		printf "\tdns-search %s\n" "${SEARCH}"
-        fi
+	fi
 done >> "$tmpf"
 
 [ -d /run/network ] || mkdir /run/network
