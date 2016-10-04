@@ -67,7 +67,9 @@ configure_net_if_needed() {
 	# on the command line (LP: #1463846)
 	local ip="$1"
 	# empty 'ip' or ip=none or ip=off specifically mean do not bring up
-	[ -z "$ip" ] && return 0
+	if [ -z "$ip" ]; then
+                return 0
+        fi
 	case "$ip" in
 		none|off) return 0;;
 	esac
@@ -78,7 +80,9 @@ configure_net_if_needed() {
 	# configure_networking does a check like this.  however, its check is
 	# broken in the event that BOOTIF is not found on the command line.
 	for f in /run/net-*.conf /tmp/net-*.conf; do
-		[ -f "$f" ] && return 0
+		if [ -f "$f" ]; then
+                        return 0
+                fi
 	done
 
 	configure_networking
@@ -137,16 +141,36 @@ for f in /run/net-*.conf /tmp/net-*.conf; do
 		echo "iface $DEVICE inet dhcp"
 	elif [ "$IPV4PROTO" = "static" ]; then
 		echo "iface $DEVICE inet static"
-		[ -n "$IPV4ADDR" ] && printf "\t%s\n" "address $IPV4ADDR"
-		[ -n "$IPV4NETMASK" ] && printf "\t%s\n" "netmask $IPV4NETMASK"
-		[ -z "$IPV4GATEWAY" ] || printf "\t%s\n" "gateway $IPV4GATEWAY"
+		if [ -n "$IPV4ADDR" ]; then
+                        printf "\t%s\n" "address $IPV4ADDR"
+                else
+                        error "WARNING: $f static with no address"
+                fi
+		if [ -n "$IPV4NETMASK" ]; then
+                        printf "\t%s\n" "netmask $IPV4NETMASK"
+                else
+                        error "WARNING: $f static with no netmask"
+                fi
+		if [ -n "$IPV4GATEWAY" ]; then
+                        printf "\t%s\n" "gateway $IPV4GATEWAY"
+                fi
 	elif [ "$IPV6PROTO" = "dhcp6" ]; then
 		echo "iface $DEVICE inet6 dhcp"
 	elif [ "$IPV6PROTO" = "static" ]; then
 		echo "iface $DEVICE inet6 static"
-		[ -n "$IPV6ADDR" ] && printf "\t%s\n" "address $IPV6ADDR"
-		[ -n "$IPV6NETMASK" ] && printf "\t%s\n" "netmask $IPV6NETMASK"
-		[ -z "$IPV6GATEWAY" ] || printf "\t%s\n" "gateway $IPV6GATEWAY"
+		if [ -n "$IPV6ADDR" ]; then
+                        printf "\t%s\n" "address $IPV6ADDR"
+                else
+                        error "WARNING: $f static with no address"
+                fi
+		if [ -n "$IPV6NETMASK" ]; then
+                        printf "\t%s\n" "netmask $IPV6NETMASK"
+                else
+                        error "WARNING: $f static with no netmask"
+                fi
+		if [ -n "$IPV6GATEWAY" ]; then
+                        printf "\t%s\n" "gateway $IPV6GATEWAY"
+                fi
 	fi
 
         nsline=""
