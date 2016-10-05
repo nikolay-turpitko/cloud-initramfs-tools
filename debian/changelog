@@ -1,5 +1,14 @@
+cloud-initramfs-tools (0.30ubuntu1) UNRELEASED; urgency=medium
+
+  [ LaMont Jones ]
+  * cloud-initramfs-dyn-netconf: Fix bug in previously added IPV6
+    support. (LP: #1621615)
+
+ -- Scott Moser <smoser@ubuntu.com>  Wed, 05 Oct 2016 11:13:57 -0400
+
 cloud-initramfs-tools (0.29ubuntu2) yakkety; urgency=medium
 
+  [ LaMont Jones ]
   * Add IPV6 support to cloud-initramfs-dyn-netconf.  (LP: #1621615)
 
  -- LaMont Jones <lamont@canonical.com>  Tue, 27 Sep 2016 16:07:48 -0600
