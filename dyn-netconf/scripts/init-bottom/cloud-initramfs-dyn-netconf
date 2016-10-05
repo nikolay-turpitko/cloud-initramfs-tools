@@ -77,8 +77,8 @@ for f in /run/net-*.conf /tmp/net-*.conf; do
 
 	DEVICE=""; PROTO=""; IPV4ADDR=""; IPV4NETMASK=""; IPV4GATEWAY="";
 	IPV4DNS0=""; IPV4DNS1=""; DNSDOMAIN=""; DOMAINSEARCH=""; filename="";
-	IPV4PROTO=""; IPV6PROTO=""; IPV6ADDR=""; IPV6NETMASK="";
-	IPV6GATEWAY=""; IPV6DNS0=""; IPV6DNS1=""; IPV6DOMAINSEARCH="";
+        IPV4PROTO=""; IPV6PROTO=""; IPV6ADDR=""; IPV6NETMASK="";
+        IPV6GATEWAY=""; IPV6DNS0=""; IPV6DNS1=""; IPV6DOMAINSEARCH="";
 	. "$f"
 
 	if [ -z "$DEVICE" ]; then
