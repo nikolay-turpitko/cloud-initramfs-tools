@@ -135,7 +135,7 @@ for f in /run/net-*.conf /tmp/net-*.conf; do
 		fi
 	fi
 
-        # We need to use care, since the script is running set -e.
+	# We need to use care, since the script is running set -e.
 	echo "manual $DEVICE"
 	if [ "$IPV4PROTO" = "dhcp" ]; then
 		echo "iface $DEVICE inet dhcp"
