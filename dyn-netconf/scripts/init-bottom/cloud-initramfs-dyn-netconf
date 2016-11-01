@@ -102,7 +102,7 @@ tmpf="/tmp/${0##*/}.ni"
 
 ni_header > "$tmpf"
 seen=","
-for f in /run/net-*.conf /tmp/net-*.conf; do
+for f in /run/net-*.conf /tmp/net-*.conf /run/net6-*.conf /tmp/net6-*.conf; do
 	[ -f "$f" ] || continue
 	dev=${f#*/net-}; dev=${dev%.conf};
 	# perhaps we saw this device from /run and now we're in /tmp
@@ -112,13 +112,17 @@ for f in /run/net-*.conf /tmp/net-*.conf; do
 
 	DEVICE=""; PROTO=""; IPV4ADDR=""; IPV4NETMASK=""; IPV4GATEWAY="";
 	IPV4DNS0=""; IPV4DNS1=""; DNSDOMAIN=""; DOMAINSEARCH=""; filename="";
-	IPV4PROTO=""; IPV6PROTO=""; IPV6ADDR=""; IPV6NETMASK="";
+	DEVICE6=""; IPV4PROTO=""; IPV6PROTO=""; IPV6ADDR=""; IPV6NETMASK="";
 	IPV6GATEWAY=""; IPV6DNS0=""; IPV6DNS1=""; IPV6DOMAINSEARCH="";
 	. "$f"
 
 	if [ -z "$DEVICE" ]; then
-		error "WARNING: $f had no 'DEVICE' set"
-		continue
+		if [ -z "$DEVICE6" ]; then
+		    error "WARNING: $f had no 'DEVICE' or 'DEVICE6' set"
+		    continue
+		else
+		    DEVICE="$DEVICE6"
+		fi
 	fi
 	# If IPv6 is supported, we get both of these, and at least one of them
 	# is set.  If we get both, use IPv4.
