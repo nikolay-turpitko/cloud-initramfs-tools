@@ -1,3 +1,11 @@
+cloud-initramfs-tools (0.31ubuntu1) UNRELEASED; urgency=medium
+
+  * cloud-initramfs-dyn-netconf: Further adjustments to support
+    IPV6 and the new DEVICE6 and net6-DEVICE.conf files.
+    (LP: #1621615)
+
+ -- Scott Moser <smoser@ubuntu.com>  Wed, 02 Nov 2016 15:53:24 -0400
+
 cloud-initramfs-tools (0.30ubuntu1) yakkety; urgency=medium
 
   [ LaMont Jones ]
