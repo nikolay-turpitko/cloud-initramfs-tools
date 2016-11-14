@@ -46,6 +46,17 @@ root_rw=/media/root-rw
 root_ro=/media/root-ro
 ROOTMNT=${rootmnt} # use global name to indicate created outside this
 OVERLAYROOT_DEBUG=0
+# PERSIST_DIR will persist after pivot-root.  It is used for log file
+# and for the mktemp-made password file in crypt.
+PERSIST_DIR=/run/initramfs
+if [ ! -d "$PERSIST_DIR" -a -d /dev/.initramfs ]; then
+	PERSIST_DIR="/dev/.initramfs"
+fi
+if [ ! -d "$PERSIST_DIR" ]; then
+	mkdir -p "$PERSIST_DIR" ||
+		echo "WARNING: $MYTAG: failed to create ${PERSIST_DIR}" 1>&2
+fi
+LOG_FILE="${PERSIST_DIR}/${MYTAG}.log"
 
 log() {
 	"log_${1}_msg" "$MYTAG: $2";
@@ -67,16 +78,8 @@ debug() {
 	echo "$MYTAG:" "$@"
 }
 _debug() {
-	local d
-	if [ -z "$DEBUG_DIR" ]; then
-		for d in /run/initramfs /dev/.initramfs; do
-			[ -d "$d" ] && DEBUG_DIR="$d" && break
-		done
-		[ -z "$DEBUG_DIR" ] && DEBUG_BUSTED=1 && DEBUG_DIR="busted" &&
-			log_warn "debug is busted. no debug dir"
-	fi
 	if [ "${DEBUG_BUSTED:-0}" ]; then
-		{ echo "$@" >> "${DEBUG_DIR}/${MYTAG}.log"; } 2>/dev/null ||
+		{ echo "$@" >> "$LOG_FILE"; } 2>/dev/null ||
 			{ DEBUG_BUSTED=1; log_warn "debug is busted"; }
 	fi
 }
@@ -214,16 +217,17 @@ crypto_setup() {
 		[ "$mkfs" = "0" ] &&
 			{ log_fail "mkfs=0, but no password provided"; return 1; }
 		entropy_sources="$entropy_sources $dev"
-		local pass_file=$(mktemp /dev/.initramfs/${MYTAG}.XXXXXX) ||
+		local pass_file=""
+		pass_file=$(mktemp "${PERSIST_DIR}/${MYTAG}.XXXXXX") ||
 			{ log_fail "failed creation of password file"; return 1; }
-		stat -L /dev/* /proc/* /sys/* >${pass_file} 2>&1 ||
+		stat -L /dev/* /proc/* /sys/* >"${pass_file}" 2>&1 ||
 			{ log_warn "could not seed with stat entropy [$entropy_sources]"; }
-		head -c 4096 $entropy_sources >> ${pass_file} ||
+		head -c 4096 $entropy_sources >> "${pass_file}" ||
 			{ log_fail "failed reading entropy [$entropy_sources]"; return 1; }
-		pass=$(sha512sum ${pass_file}) ||
+		pass=$(sha512sum "${pass_file}") ||
 			{ log_fail "failed generation of password"; return 1; }
 		pass=${pass%% *}
-		printf "%s" "${pass}" > ${pass_file}
+		printf "%s" "${pass}" > "${pass_file}"
 	fi
 
 	log_warn "setting up new luks device at $dev"
