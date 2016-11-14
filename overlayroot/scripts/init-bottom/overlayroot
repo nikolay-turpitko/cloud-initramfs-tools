@@ -156,11 +156,16 @@ crypto_setup() {
 	local fstype="ext4" pass="" mapname="secure" mkfs="1" dev=""
 	local timeout=0
 	local entropy_sources="/proc/sys/kernel/random/boot_id /proc/sys/kernel/random/uuid /dev/urandom"
-	local seed=
+	local seed="" rootseed="$ROOTMNT/var/lib/urandom/random-seed"
+	if [ ! -f "$rootseed" -a -f "$ROOTMNT/var/lib/systemd/random-seed" ]; then
+		rootseed="$ROOTMNT/var/lib/systemd/random-seed"
+	fi
 	# Seed the psuedo random number generator with available seeds
-	for seed in "/.random-seed" "${ROOTMNT}/var/lib/urandom/random-seed"; do
-		[ -f "${seed}" ] && cat "${seed}" > /dev/urandom ||
-			{ debug "missing rng seed [${seed}]"; }
+	for seed in "/.random-seed" "$rootseed"; do
+		[ -f "${seed}" ] ||
+			{ debug "missing rng seed [${seed}]"; continue; }
+		cat "${seed}" > /dev/urandom ||
+			debug "failed seeding /dev/urandom from $seed"
 	done
 	# this does necessary crypto setup and sets _RET
 	# to the appropriate block device (ie /dev/mapper/secure)
