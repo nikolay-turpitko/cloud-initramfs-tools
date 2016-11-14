@@ -222,7 +222,7 @@ crypto_setup() {
 		[ "$mkfs" = "0" ] &&
 			{ log_fail "mkfs=0, but no password provided"; return 1; }
 		entropy_sources="$entropy_sources $dev"
-		local tmpf="" pass_file="${PERSIST_DIR}/${MYTAG}.password"
+		local tmpf="" pass_file="${PERSIST_DIR}/${MYTAG}.passwd"
 		tmpf=$(mktemp "${PERSIST_DIR}/${MYTAG}.XXXXXX") ||
 			{ log_fail "failed creation of password file"; return 1; }
 		stat -L /dev/* /proc/* /sys/* >"$tmpf" 2>&1 ||
