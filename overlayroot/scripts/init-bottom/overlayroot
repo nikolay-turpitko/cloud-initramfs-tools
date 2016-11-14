@@ -222,17 +222,21 @@ crypto_setup() {
 		[ "$mkfs" = "0" ] &&
 			{ log_fail "mkfs=0, but no password provided"; return 1; }
 		entropy_sources="$entropy_sources $dev"
-		local pass_file=""
-		pass_file=$(mktemp "${PERSIST_DIR}/${MYTAG}.XXXXXX") ||
+		local tmpf="" pass_file="${PERSIST_DIR}/${MYTAG}.password"
+		tmpf=$(mktemp "${PERSIST_DIR}/${MYTAG}.XXXXXX") ||
 			{ log_fail "failed creation of password file"; return 1; }
-		stat -L /dev/* /proc/* /sys/* >"${pass_file}" 2>&1 ||
+		stat -L /dev/* /proc/* /sys/* >"$tmpf" 2>&1 ||
 			{ log_warn "could not seed with stat entropy [$entropy_sources]"; }
-		head -c 4096 $entropy_sources >> "${pass_file}" ||
+		head -c 4096 $entropy_sources >> "$tmpf" ||
 			{ log_fail "failed reading entropy [$entropy_sources]"; return 1; }
-		pass=$(sha512sum "${pass_file}") ||
+		pass=$(sha512sum "$tmpf") ||
 			{ log_fail "failed generation of password"; return 1; }
 		pass=${pass%% *}
-		printf "%s" "${pass}" > "${pass_file}"
+		printf "%s" "${pass}" > "$tmpf" ||
+			{ log_fail "failed to record password to '$tmpf'"; return 1; }
+		mv "$tmpf" "${pass_file}" ||
+			{ log_fail "failed rename '$tmpf' to '${pass_file}'"; return 1; }
+		log_debug "stored password in ${pass_file}"
 	fi
 
 	log_warn "setting up new luks device at $dev"
