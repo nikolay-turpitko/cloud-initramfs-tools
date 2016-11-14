@@ -1,3 +1,12 @@
+cloud-initramfs-tools (0.32ubuntu1) UNRELEASED; urgency=medium
+
+  * overlayroot: fix overlayroot=crypt with newer initramfs-tools
+    (LP: #1634310)
+  * overlayroot: support random seed from systemd
+    systemd-random-seed.service
+
+ -- Scott Moser <smoser@ubuntu.com>  Mon, 14 Nov 2016 12:24:29 -0500
+
 cloud-initramfs-tools (0.31ubuntu1) zesty; urgency=medium
 
   * cloud-initramfs-dyn-netconf: Further adjustments to support
