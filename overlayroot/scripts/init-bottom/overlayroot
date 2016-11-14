@@ -519,9 +519,9 @@ search_fs_driver() {
 	# assumes that name in /proc/filesystems and module name are the same.
 	local m="" driver="" tab='	'
 	for m in "$@"; do
-    	grep -q "${tab}$m$" /proc/filesystems && driver="$m" && 
+		grep -q "${tab}$m$" /proc/filesystems && driver="$m" && 
 			{ debug "/proc/filesystems support for '$m'"; break; }
-    done
+	done
 	if [ -z "$driver" ]; then
 		for m in "$@"; do
 			if modprobe -qb "$m"; then
