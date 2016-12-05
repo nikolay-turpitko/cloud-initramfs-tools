@@ -1,3 +1,51 @@
+cloud-initramfs-tools (0.32ubuntu1) zesty; urgency=medium
+
+  * overlayroot: fix overlayroot=crypt with newer initramfs-tools
+    (LP: #1634310)
+  * overlayroot: support random seed from systemd
+    systemd-random-seed.service
+
+ -- Scott Moser <smoser@ubuntu.com>  Mon, 14 Nov 2016 12:25:10 -0500
+
+cloud-initramfs-tools (0.31ubuntu1) zesty; urgency=medium
+
+  * cloud-initramfs-dyn-netconf: Further adjustments to support
+    IPV6 and the new DEVICE6 and net6-DEVICE.conf files.
+    (LP: #1621615)
+
+ -- Scott Moser <smoser@ubuntu.com>  Wed, 02 Nov 2016 15:55:39 -0400
+
+cloud-initramfs-tools (0.30ubuntu1) yakkety; urgency=medium
+
+  [ LaMont Jones ]
+  * cloud-initramfs-dyn-netconf: Fix bug in previously added IPV6
+    support. (LP: #1621615)
+
+ -- Scott Moser <smoser@ubuntu.com>  Wed, 05 Oct 2016 11:52:32 -0400
+
+cloud-initramfs-tools (0.29ubuntu2) yakkety; urgency=medium
+
+  [ LaMont Jones ]
+  * Add IPV6 support to cloud-initramfs-dyn-netconf.  (LP: #1621615)
+
+ -- LaMont Jones <lamont@canonical.com>  Tue, 27 Sep 2016 16:07:48 -0600
+
+cloud-initramfs-tools (0.29ubuntu1) yakkety; urgency=medium
+
+  * overlayroot: support 'overlay' filesystem explicitly rather than
+    relying on ubuntu specific kernel module 'overlayfs'.  (LP: #1493188)
+
+ -- Scott Moser <smoser@ubuntu.com>  Fri, 23 Sep 2016 17:00:37 -0400
+
+cloud-initramfs-tools (0.28ubuntu1) yakkety; urgency=medium
+
+  * overlayroot: write debug to /run/initramfs not /dev/.initramfs but
+    support writing to /dev/.initramfs if that is all there is. (LP: #1485752)
+  * overlayroot: fix overlayroot if recurse=0 was not provided.
+    This fuctionality was lost since workdir support was added. (LP: #1619459)
+
+ -- Scott Moser <smoser@ubuntu.com>  Fri, 02 Sep 2016 11:20:53 -0400
+
 cloud-initramfs-tools (0.27ubuntu1+tarroot1) xenial; urgency=medium
 
   * add tarroot

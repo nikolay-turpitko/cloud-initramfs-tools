@@ -46,6 +46,17 @@ root_rw=/media/root-rw
 root_ro=/media/root-ro
 ROOTMNT=${rootmnt} # use global name to indicate created outside this
 OVERLAYROOT_DEBUG=0
+# PERSIST_DIR will persist after pivot-root.  It is used for log file
+# and for the mktemp-made password file in crypt.
+PERSIST_DIR=/run/initramfs
+if [ ! -d "$PERSIST_DIR" -a -d /dev/.initramfs ]; then
+	PERSIST_DIR="/dev/.initramfs"
+fi
+if [ ! -d "$PERSIST_DIR" ]; then
+	mkdir -p "$PERSIST_DIR" ||
+		echo "WARNING: $MYTAG: failed to create ${PERSIST_DIR}" 1>&2
+fi
+LOG_FILE="${PERSIST_DIR}/${MYTAG}.log"
 
 log() {
 	"log_${1}_msg" "$MYTAG: $2";
@@ -67,11 +78,12 @@ debug() {
 	echo "$MYTAG:" "$@"
 }
 _debug() {
-	if [ "${DEBUG_BUSTED:-0}" = "0" ]; then
-		{ echo "$@" >> "/dev/.initramfs/${MYTAG}.log"; } 2>/dev/null ||
+	if [ "${DEBUG_BUSTED:-0}" ]; then
+		{ echo "$@" >> "$LOG_FILE"; } 2>/dev/null ||
 			{ DEBUG_BUSTED=1; log_warn "debug is busted"; }
 	fi
 }
+
 safe_string() {
 	local prev="$1" allowed="$2" cur=""
 	[ -n "$prev" ] || return 1
@@ -144,11 +156,16 @@ crypto_setup() {
 	local fstype="ext4" pass="" mapname="secure" mkfs="1" dev=""
 	local timeout=0
 	local entropy_sources="/proc/sys/kernel/random/boot_id /proc/sys/kernel/random/uuid /dev/urandom"
-	local seed=
+	local seed="" rootseed="$ROOTMNT/var/lib/urandom/random-seed"
+	if [ ! -f "$rootseed" -a -f "$ROOTMNT/var/lib/systemd/random-seed" ]; then
+		rootseed="$ROOTMNT/var/lib/systemd/random-seed"
+	fi
 	# Seed the psuedo random number generator with available seeds
-	for seed in "/.random-seed" "${ROOTMNT}/var/lib/urandom/random-seed"; do
-		[ -f "${seed}" ] && cat "${seed}" > /dev/urandom ||
-			{ debug "missing rng seed [${seed}]"; }
+	for seed in "/.random-seed" "$rootseed"; do
+		[ -f "${seed}" ] ||
+			{ debug "missing rng seed [${seed}]"; continue; }
+		cat "${seed}" > /dev/urandom ||
+			debug "failed seeding /dev/urandom from $seed"
 	done
 	# this does necessary crypto setup and sets _RET
 	# to the appropriate block device (ie /dev/mapper/secure)
@@ -205,16 +222,21 @@ crypto_setup() {
 		[ "$mkfs" = "0" ] &&
 			{ log_fail "mkfs=0, but no password provided"; return 1; }
 		entropy_sources="$entropy_sources $dev"
-		local pass_file=$(mktemp /dev/.initramfs/${MYTAG}.XXXXXX) ||
+		local tmpf="" pass_file="${PERSIST_DIR}/${MYTAG}.passwd"
+		tmpf=$(mktemp "${PERSIST_DIR}/${MYTAG}.XXXXXX") ||
 			{ log_fail "failed creation of password file"; return 1; }
-		stat -L /dev/* /proc/* /sys/* >${pass_file} 2>&1 ||
+		stat -L /dev/* /proc/* /sys/* >"$tmpf" 2>&1 ||
 			{ log_warn "could not seed with stat entropy [$entropy_sources]"; }
-		head -c 4096 $entropy_sources >> ${pass_file} ||
+		head -c 4096 $entropy_sources >> "$tmpf" ||
 			{ log_fail "failed reading entropy [$entropy_sources]"; return 1; }
-		pass=$(sha512sum ${pass_file}) ||
+		pass=$(sha512sum "$tmpf") ||
 			{ log_fail "failed generation of password"; return 1; }
 		pass=${pass%% *}
-		printf "%s" "${pass}" > ${pass_file}
+		printf "%s" "${pass}" > "$tmpf" ||
+			{ log_fail "failed to record password to '$tmpf'"; return 1; }
+		mv "$tmpf" "${pass_file}" ||
+			{ log_fail "failed rename '$tmpf' to '${pass_file}'"; return 1; }
+		log_debug "stored password in ${pass_file}"
 	fi
 
 	log_warn "setting up new luks device at $dev"
@@ -258,20 +280,39 @@ dev_setup() {
 	_RET_DEVICE="$dev"
 }
 
+clean_path() {
+	# remove '//' in a path.
+	local p="$1" tmp=""
+	while [ "${p#*//}" != "$p" ]; do
+		tmp=${p#*//}
+		p="${p%%//*}/${tmp}"
+	done
+	_RET="$p"
+}
+
+get_workdir() {
+	local root_rw="$1" dir_prefix="$2" file="$3"
+	file=${file%/}
+	if [ "$file" = "/" -o "$file" = "" ]; then
+		file="_"
+	fi
+	clean_path "${root_rw}/${dir_prefix%/}-workdir/${file}"
+}
+
 overlayrootify_fstab() {
 	# overlayrootify_fstab(input, root_ro, root_rw, dir_prefix, recurse, swap)
 	# read input fstab file, write an overlayroot version to stdout
 	# also returns (_RET) a list of directories that will need to be made
 	local input="$1" root_ro="${2:-/media/root-ro}"
 	local root_rw="${3:-/media/root-rw}" dir_prefix="${4:-/}"
-	local recurse=${5:-1} swap=${6:-0}
+	local recurse=${5:-1} swap=${6:-0} fstype=${7:-overlayfs}
 	local hash="#" oline="" ospec="" upper="" dirs="" copy_opts=""
-	local vfstypes=" proc sys tmpfs dev udev "
 	local spec file vfstype opts pass freq line ro_line
+	local workdir="" use_orig="" relfile="" needs_workdir=false
 	
-	dir_prefix="${dir_prefix#/}"
-
 	[ -f "$input" ] || return 1
+
+	needs_workdir && needs_workdir=true || needs_workdir=false
 	while read spec file vfstype opts pass freq; do
 		line="$spec $file $vfstype $opts $pass $freq"
 		case ",$opts," in
@@ -279,21 +320,34 @@ overlayrootify_fstab() {
 			*) ro_opts="ro,${opts}";;
 		esac
 		ro_line="$spec ${root_ro}$file $vfstype ${ro_opts} $pass $freq"
-		if [ "${spec#${hash}}" != "$spec" ] ||
-		   [ -z "$freq" ]; then
-			# line has a comment in first field, or not 6 fields
-			echo "$line"
-		elif [ "${vfstypes# *${vfstype} }" != "${vfstypes}" ]; then
-			# this is a virtual filesystem, just let it through
-			echo "${line}"
+
+		use_orig=""
+		if [ "${spec#${hash}}" != "$spec" ]; then
+			use_orig="comment"
+		elif [ -z "$freq" ]; then
+			use_orig="malformed-line"
+		else
+			case "$vfstype" in
+				vfat|fat) use_orig="fs-unsupported";;
+				proc|sys|tmpfs|dev|udev) use_orig="fs-virtual";;
+			esac
+		fi
+
+		rel_file=${file#/}
+		if [ -n "$use_orig" ]; then
+			if [ "$use_orig" != "comment" ]; then
+				echo "$line # $MYTAG:$use_orig"
+			else
+				echo "$line"
+			fi
 		elif [ "$vfstype" = "swap" ]; then
 			if [ "$swap" = "0" ]; then
 				# comment out swap lines
-				echo "#overlayroot:swap=${swap}#${line}"
+				echo "#$MYTAG:swap=${swap}#${line}"
 			elif [ "${spec#/}" != "${spec}" ] &&
 			     [ "${spec#/dev/}" = "${spec}" ]; then
 				# comment out swap files (spec starts with / and not in /dev)
-				echo "#overlayroot:swapfile#${line}"
+				echo "#$MYTAG:swapfile#${line}"
 			else
 				echo "${line}"
 			fi
@@ -302,10 +356,21 @@ overlayrootify_fstab() {
 			copy_opts=""
 			[ "${opts#*nobootwait*}" != "${opts}" ] &&
 				copy_opts=",nobootwait"
-			upper="${root_rw%/}/${dir_prefix%/}${file%/}"
-			oline="${ospec} ${file} overlayfs "
-			oline="${oline}lowerdir=${root_ro}${file},"
-			oline="${oline}upperdir=${upper}${copy_opts} $pass $freq"
+			clean_path "${root_rw}/${dir_prefix}${file}"
+			upper="$_RET"
+
+			oline="${ospec} ${file} $fstype "
+			clean_path "${root_ro}${file}"
+			oline="${oline}lowerdir=$_RET"
+			oline="${oline},upperdir=${upper}${copy_opts}"
+			if [ "$fstype" = "overlayfs" -o "$fstype" = "overlay" ] &&
+				${needs_workdir}; then
+				get_workdir "$root_rw" "$dir_prefix" "$file"
+				workdir="$_RET"
+				oline="${oline},workdir=$workdir"
+				dirs="${dirs} $workdir"
+			fi
+ 			oline="${oline} $pass $freq"
 
 			if [ "$recurse" != "0" ]; then
 				echo "$ro_line"
@@ -446,6 +511,48 @@ fix_upstart_overlayfs() {
 	debug "created $eifile under $root (LP: #1213925)"
 }
 
+needs_workdir() {
+	local uname_r="${UNAME_R}"
+	if [ -z "$uname_r" ]; then
+		uname_r=$(uname -r) && UNAME_R="$uname_r" ||
+			{ log_warn "failed to read uname!"; return 2; }
+	fi
+	# 3.18+ require 'workdir=' option.
+	case "${uname_r}" in
+		2*|3.1[01234567]*|3.[0-9].*) return 1;;
+		*) return 0;;
+	esac
+}
+
+
+search_fs_driver() {
+	# search_fs_driver(driver1, driver2...)
+	# return the first supported filesystem driver in the list.
+	# if no drivers are provided, search default list.
+	# assumes that name in /proc/filesystems and module name are the same.
+	local m="" driver="" tab='	'
+	for m in "$@"; do
+		grep -q "${tab}$m$" /proc/filesystems && driver="$m" && 
+			{ debug "/proc/filesystems support for '$m'"; break; }
+	done
+	if [ -z "$driver" ]; then
+		for m in "$@"; do
+			if modprobe -qb "$m"; then
+				if grep -q "${tab}$m$" /proc/filesystems; then
+					debug "loaded module '$m'";
+					driver="$m"
+					break;
+				else
+					log_warn "loaded '$m' module but no '$m' in /proc/filesystems"
+				fi
+			fi
+		done
+	fi
+	[ -n "$driver" ] ||
+		{ debug "Unable to find driver/module. searched: $*"; return 1; }
+	_RET="$driver"
+}
+
 cfgd="${TEMP_D}/configs"
 mkdir -p "${cfgd}" || fail "failed to create tempdir"
 trap cleanup EXIT
@@ -541,35 +648,41 @@ swap=${_RET_common_swap:-0}
 recurse=${_RET_common_recurse:-1}
 OVERLAYROOT_DEBUG=${_RET_common_debug:-${OVERLAYROOT_DEBUG}}
 dir_prefix=${_RET_common_dir:-"/overlay"}
+overlayroot_driver=${_RET_common_driver}
+
+if [ "${overlayroot_driver:-auto}" = "auto" ]; then
+	search_fs_driver overlay overlayfs ||
+		fail "Unable to find a driver. searched: overlay overlayfs"
+	overlayroot_driver="$_RET"
+else
+	search_fs_driver ${overlayroot_driver} ||
+		fail "Unable to find a driver named '${overlayroot_driver}'"
+	overlayroot_driver="$_RET"
+fi
 
 debug "swap=$swap recurse=$recurse debug=$OVERLAYROOT_DEBUG dir=$dir_prefix"
-debug "device=$device mode=$mode"
+debug "device=$device mode=$mode driver=${overlayroot_driver}"
 
 [ "$swap" = "0" -o "$swap" = "1" ] ||
 	fail "invalid setting for swap: $swap. must be '0' or '1'"
 [ "$recurse" = "0" -o "$recurse" = "1" ] ||
 	fail "invalid setting for recurse: $recurse. must be '0' or '1'"
 
-log_warn "configuring overlayroot with mode=$mode opts='$opts' per $used_desc"
-
-# overlayroot_driver *could* be defined in one of the configs above
-# but we're not documenting that.
-overlayroot_driver=${overlayroot_driver:-overlayfs}
+log_warn "configuring overlayroot with driver=${overlayroot_driver} mode=$mode opts='$opts' per $used_desc"
 
 # settings based on overlayroot_driver
 workdir=""
 case "${overlayroot_driver}" in
-	overlayfs)
-		mount_type="overlayfs"
+	overlayfs|overlay)
+		mount_type="${overlayroot_driver}"
 		mount_opts="-o lowerdir=${root_ro},upperdir=${root_rw}/${dir_prefix}"
-		# 3.18+ require 'workdir=' option.
-		case "$(uname -r)" in
-			2*|3.1[01234567]*|3.[0-9].*) :;;
-			*)
-				workdir="${dir_prefix%/}-workdir"
-				mount_opts="${mount_opts},workdir=${root_rw}/${workdir}";;
-		esac
-		mount_opts="${mount_opts} overlayroot ${ROOTMNT}"
+		if needs_workdir; then
+			get_workdir "$root_rw" "$dir_prefix" "/"
+			workdir="$_RET"
+			mount_opts="${mount_opts},workdir=$workdir"
+		fi
+		clean_path "${mount_opts} overlayroot ${ROOTMNT}"
+		mount_opts="$_RET"
 		;;
 	aufs)
 		mount_type="aufs"
@@ -580,10 +693,6 @@ case "${overlayroot_driver}" in
 		panic "$MYTAG"
 		;;
 esac
-
-# check if kernel module exists 
-modprobe -qb "${overlayroot_driver}" ||
-	fail "missing kernel module ${overlayroot_driver}"
 
 # make the mount point on the init root fs ${root_rw}
 mkdir -p "${root_rw}" ||
@@ -607,7 +716,7 @@ fi
 mkdir -p "${root_rw}/${dir_prefix}" ||
 	fail "failed to create ${dir_prefix} on ${device}"
 
-[ -z "$workdir" ] || mkdir -p "$root_rw/${workdir}" ||
+[ -z "$workdir" ] || mkdir -p "$workdir" ||
 	fail "failed to create workdir '$workdir' on ${device}"
 
 # root is mounted on ${ROOTMNT}, move it to ${ROOT_RO}.
@@ -625,7 +734,7 @@ mount -t "$mount_type" $mount_opts
 if [ $? -ne 0 ]; then
 	log_fail "failed to create new ro/rw layered ${ROOTMNT}"
 	log_fail "mount command was: mount -t $mount_type $mount_opts"
-	# do recovery and try resoring the mount for ${ROOTMNT}
+	# do recovery and try restoring the mount for ${ROOTMNT}
 	mount --move ${root_ro} ${ROOTMNT}
 	if [ $? -ne 0 ]; then
 		# thats bad, drop to shell to let the user try fixing this
@@ -674,7 +783,7 @@ mount --move "${root_rw}" "${ROOTMNT}${root_rw}" ||
 # ${ROOTMNT}${root_ro}/etc/fstab.
 cat <<EOF >${ROOTMNT}/etc/fstab
 #
-#  This fstab is in an overlayfs.  The real one can be found at
+#  This fstab is in an ${overlayroot_driver}. The real one can be found at
 #  ${root_ro}/etc/fstab
 #  The original entry for '/' and other mounts have been updated to be placed
 #  under $root_ro.
@@ -686,7 +795,8 @@ EOF
 
 [ $? -eq 0 ] || log_fail "failed to modify /etc/fstab (step 1)"
 overlayrootify_fstab ""${ROOTMNT}${root_ro}/etc/fstab"" "$root_ro" \
-	"$root_rw" "$dir_prefix" "$recurse" "$swap" >> "${ROOTMNT}/etc/fstab" ||
+	"$root_rw" "$dir_prefix" "$recurse" "$swap" "${overlayroot_driver}" \
+	>> "${ROOTMNT}/etc/fstab" ||
 	log_fail "failed to modify /etc/fstab (step 2)"
 
 # we have to make the directories in ${root_rw} because if they do not
