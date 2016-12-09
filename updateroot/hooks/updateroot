@@ -15,11 +15,10 @@ prereqs() {
 needs="tar xz" #gzip gunzip"
 for need in $needs; do fp=$(which $need) && copy_exec "$fp" /bin; done
 
-
-## this is messed up, but if we put these in /bin, then
-## /usr/share/initramfs-tools/hooks/busybox will actually remove them.
-## 
-## the busybox versions are sufficient for our needs.
+## The busybox versions of gzip and gunzip are sufficient, so use them rather
+## than the full programs via copy_exec.  However, because of odd behavior in
+## initramfs-tools, if we put symlinks in /bin, then
+## initramfs-tools/hooks/busybox will remove them.  So instead, use /sbin
 bbox="gzip gunzip"
 [ -d "$DESTDIR/sbin" ] || mkdir -p "$DESTDIR/sbin"
 for need in $bbox; do ln -sf ../bin/busybox "$DESTDIR/sbin/$need"; done
