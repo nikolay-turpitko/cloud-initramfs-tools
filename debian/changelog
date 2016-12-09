@@ -1,3 +1,9 @@
+cloud-initramfs-tools (0.33ubuntu1) UNRELEASED; urgency=medium
+
+  * add cloud-initramfs-rooturl package.
+
+ -- Scott Moser <smoser@ubuntu.com>  Fri, 09 Dec 2016 05:25:23 -0500
+
 cloud-initramfs-tools (0.32ubuntu1) zesty; urgency=medium
 
   * overlayroot: fix overlayroot=crypt with newer initramfs-tools
