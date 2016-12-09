@@ -85,12 +85,3 @@ Depends: initramfs-tools,
 Description: use a tarball or squashfs image in a url as the root filesystem
  Allows user to pass in root=http://example.com/your.tar.gz
  Root filesystem will be tmpfs from that url.
-
-Package: cloud-initramfs-updateroot
-Architecture: all
-Depends: initramfs-tools,
-         ${misc:Depends},
-         ${shlibs:Depends}
-Description: extract a tarball over root filesystem before pivot
- Allows kernel command line updateroot=http://your.tar.gz
- And then tarball will be pulled and extracted over the root.
