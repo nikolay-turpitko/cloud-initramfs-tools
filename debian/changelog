@@ -1,3 +1,9 @@
+cloud-initramfs-tools (0.33ubuntu1) zesty; urgency=medium
+
+  * add cloud-initramfs-rooturl package.
+
+ -- Scott Moser <smoser@ubuntu.com>  Fri, 09 Dec 2016 05:28:54 -0500
+
 cloud-initramfs-tools (0.32ubuntu1) zesty; urgency=medium
 
   * overlayroot: fix overlayroot=crypt with newer initramfs-tools
@@ -45,12 +51,6 @@ cloud-initramfs-tools (0.28ubuntu1) yakkety; urgency=medium
     This fuctionality was lost since workdir support was added. (LP: #1619459)
 
  -- Scott Moser <smoser@ubuntu.com>  Fri, 02 Sep 2016 11:20:53 -0400
-
-cloud-initramfs-tools (0.27ubuntu1+tarroot1) xenial; urgency=medium
-
-  * add tarroot
-
- -- Scott Moser <smoser@ubuntu.com>  Thu, 03 Mar 2016 09:18:47 -0500
 
 cloud-initramfs-tools (0.27ubuntu1) wily; urgency=medium
 
