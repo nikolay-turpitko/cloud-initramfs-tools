@@ -45,18 +45,26 @@ extract_urls() {
 		debug 1 "# updateroot [$zopt] $url"
 		wget "$url" -O - | tar -C "$target" -xp${zopt}f -
 	done
-	if [ -x "$target/.updateroot" ]; then
-		local script
-		set +f
-		for script in "$target/.updateroot/"*; do
-			[ -f "$script" -a -x "$script" ] || continue
-			debug "running ${script#$target} in target root"
-			chroot "$target" "${script#$target}"
-		done
+	if [ ! -d "$target/.updateroot" ]; then
+		return
 	fi
+	(
+	set +f
+	fails=0
+	for script in "$target/.updateroot/"*; do
+		[ -f "$script" -a -x "$script" ] || continue
+		debug "running ${script#$target} in target root"
+		chroot "$target" "${script#$target}" || {
+			fails=$(($fails+1))
+			ret=$?
+			log_warn "script '${script#$target/}' exited $ret"
+		}
+	done
+	[ $fails -eq 0 ] || exit 1
+	)
 }
 
-apply_overroot() {
+apply_updateroot() {
 	local cmdline urls
 	if ! read cmdline < /proc/cmdline; then
 		log_warn "no /proc/cmdline?"
@@ -80,19 +88,32 @@ apply_overroot() {
 		return 1
 	fi
 
-	# TODO: only remount rw if not already rw
-	if mount -o remount,rw "$rootmnt"; then
-		set -f
-		extract_urls "$rootmnt" $urls
-		set +f
-		mount -o remount,ro "$rootmnt"
+	# only mount rw if not already rw
+	local need_remount="false" ret=0
+	if ( : > "$rootmnt/.updateroot" ) >/dev/null 2>&1; then
+		mount -o remount,rw "$rootmnt" || {
+			log_warn "failed mount '$rootmnt' as rw.  Cannot use updateroot."
+			return 1;
+		}
+		need_remount="true"
+	fi
+	
+	# subshell to protect expansion of urls
+	( set -f; extract_urls "$rootmnt" $urls )
+	ret=$?
+
+	if [ "${need_remount}" = "true" ]; then
+		mount -o remount,ro "$rootmnt" || {
+			log_warn "failed remounting root '$rootmnt' as ro!"
+			return 1
+		}
 	fi
 
+	return $ret
 }
 
 . /scripts/functions
 
-apply_overroot
+apply_updateroot
 
-exit 0 
 # vi: ts=4 noexpandtab
