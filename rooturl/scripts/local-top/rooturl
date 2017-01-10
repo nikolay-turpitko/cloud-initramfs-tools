@@ -15,9 +15,9 @@
 #    along with this program.  If not, see
 #    <http://www.gnu.org/licenses/>.
 
-PREREQ=""
+PREREQS=""
 case $1 in
-    prereqs) echo "${PREREQS}"; exit 0;;
+	prereqs) echo "${PREREQS}"; exit 0;;
 esac
 
 VERBOSITY="1"
@@ -30,15 +30,16 @@ debug() {
 }
 
 mount_tar() {
-	local target="$1" urls="$2" url=""
+	local target="$1" url=""
+	shift;
 	mount -t tmpfs ${ROOTFLAGS} root_url "$target" || return
 
 	local zopt=""
 	for url in "$@"; do
-        case "$url" in
-           *.tar.gz|*.tgz) zopt="z";;
-           *.tar.xz|*.txz) zopt="J";;
-        esac
+		case "$url" in
+			*.tar.gz|*.tgz) zopt="z";;
+			*.tar.xz|*.txz) zopt="J";;
+		esac
 		debug 1 "# [$zopt] $url"
 		wget "$url" -O - | tar -C "$target" -xp${zopt}f -
 	done
@@ -51,12 +52,12 @@ mount_squash() {
 		log_warn "too many arguments to mount_squash: $*"
 		return 1
 	fi
-    debug 1 "mount_sqush downlading $url to $target.img"
+	debug 1 "mount_squash downloading $url to $target.img"
 	wget "$url" -O "$target.img"
 	debug 1 "mount -t squashfs -o loop ${ROOTFLAGS}" \
-        "'$target.img' '$target'"
+		"'$target.img' '$target'"
 	mount -t squashfs -o loop ${ROOTFLAGS} \
-        "$target.img" "$target" || return
+		"$target.img" "$target" || return
 }
 
 mount_url() {
