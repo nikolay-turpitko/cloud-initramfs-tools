@@ -1,0 +1,161 @@
+#!/bin/sh
+#  Copyright, 2016 Scott Moser <smoser@ubuntu.com>
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see
+#    <http://www.gnu.org/licenses/>.
+VERBOSITY="1"
+
+prereqs() {
+	local o="/scripts/init-bottom/overlayroot"  p=""
+	# basically we run after overlayroot but do not depend on it
+	for p in "$DESTDIR/" ""; do
+		[ -e "$p$o" ] && echo "overlayroot" && return 0
+	done
+}
+
+[ "$1" != "prereqs" ] || { prereqs; exit; }
+
+setf() {
+	# setf 0|1
+	#  set pathname expansion (-f) off or on
+	#     off is an alias for 0
+	#     on is an alias for 1
+	#  stores the current setting in the unscoped variable 'setf'
+	#  returns the previous setting:
+	#     0 if pathname expansion was off
+	#     1 if pathname expansion was on
+	# setf restore [setting]
+	#  restore pathname expansion to 'setting'.
+	#  if setting is not provided, defaults to variable 'setf'
+	if [ "$1" = "restore" ]; then
+		local val=${2:-${setf:-"-"}}
+		[ "$val" = "0" ] && val="-" || val="+"
+		set ${val}f
+		return
+	fi
+
+	local f="" n="0" d=/ r="1"
+	setf="+"
+	for f in "$d/"*; do
+		[ $n -gt 1 ] && break
+		n=$(($n+1))
+	done
+	[ $n -eq 1 -a "$f" = "$d/*" ] && setf="-" && r="0"
+	case "$1" in
+		off|0) set -f;;
+		on|1) set +f;;
+	esac
+	return $r
+}
+
+debug() {
+	local v=$1
+	shift
+	[ $v -lt $VERBOSITY ] && return 0
+	echo "::" "$@"
+}
+
+extract_urls() {
+	local target="$1" url="" zopt="" script="" fails="" ret=""
+	shift
+	for url in "$@"; do
+		case "$url" in
+			*.tar.gz|*.tgz) zopt="z";;
+			*.tar.xz|*.txz) zopt="J";;
+			*) zopt="";;
+		esac
+		debug 1 "# updateroot [$zopt] $url"
+		wget "$url" -O - | tar -C "$target" -xp${zopt}f -
+	done
+	if [ ! -d "$target/.updateroot" ]; then
+		return 0
+	fi
+
+	fails=0
+	setf on; set -- "$target/.updateroot/"*; setf restore
+	for script in "$@"; do
+		[ -f "$script" -a -x "$script" ] || continue
+		debug 1 "running ${script#$target} in target root"
+		chroot "$target" "${script#$target}" || {
+			fails=$(($fails+1))
+			ret=$?
+			log_warn "script '${script#$target/}' exited $ret"
+		}
+	done
+	[ $fails -eq 0 ]
+}
+
+apply_updateroot() {
+	local rootmnt="$1" cmdline="$2" ret=""
+	local cmdline urls
+	if [ "$cmdline" = "" ]; then
+		if ! read cmdline < /proc/cmdline; then
+			log_warn "no /proc/cmdline?"
+			return 1
+		fi
+	fi
+	setf off; set -- $cmdline; setf restore
+	for tok in "$@"; do
+		case "$tok" in
+			updateroot=http://*) urls="${urls} ${tok#*=}";;
+		esac
+	done
+	urls=${urls# }
+
+	setf off; set -- $urls; setf restore
+	if [ $# -eq 0 ]; then
+		debug 1 "no updateroot urls configured in cmdline"
+		return 0
+	fi
+
+	if ! configure_networking; then
+		log_warn "failed configuring networking [$?]"
+		return 1
+	fi
+
+	# only mount rw if not already rw
+	local need_remount="false" ret=0 created=true
+	local tfile="$rootmnt/.updateroot.touch"
+	[ -e "$tfile" ] || created=false
+	if ! ( : >> "$tfile" ) >/dev/null 2>&1; then
+		mount -o remount,rw "$rootmnt"
+		ret=$?
+		if $created; then
+			rm -f "$tfile"
+		fi
+		if [ $ret -ne 0 ]; then
+			log_warn "failed mount '$rootmnt' as rw [$ret]."
+			return 1;
+		fi
+		need_remount="true"
+	fi
+	
+	extract_urls "$rootmnt" "$@"
+	ret=$?
+
+	if $need_remount; then
+		mount -o remount,ro "$rootmnt" || {
+			log_warn "failed remounting root '$rootmnt' as ro [$?]!"
+			return 1
+		}
+	fi
+
+	return $ret
+}
+
+. /scripts/functions
+
+apply_updateroot "$rootmnt"
+
+# vi: ts=4 noexpandtab
