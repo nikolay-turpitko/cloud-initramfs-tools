@@ -1,3 +1,9 @@
+cloud-initramfs-tools (0.35ubuntu1) UNRELEASED; urgency=medium
+
+  * add cloud-initramfs-updateroot package.
+
+ -- Scott Moser <smoser@ubuntu.com>  Wed, 11 Jan 2017 09:45:02 -0500
+
 cloud-initramfs-tools (0.34ubuntu1) zesty; urgency=medium
 
   * cloud-initramfs-rooturl: fix bug resulting in warning message
