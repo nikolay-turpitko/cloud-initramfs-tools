@@ -93,7 +93,7 @@ extract_urls() {
 			log_warn "script '${script#$target/}' exited $ret"
 		}
 	done
-	[ $fails -eq 0 ] || exit 1
+	[ $fails -eq 0 ]
 }
 
 apply_updateroot() {
@@ -144,7 +144,7 @@ apply_updateroot() {
 	extract_urls "$rootmnt" "$@"
 	ret=$?
 
-	if [ "${need_remount}" = "true" ]; then
+	if $need_remount; then
 		mount -o remount,ro "$rootmnt" || {
 			log_warn "failed remounting root '$rootmnt' as ro [$?]!"
 			return 1
