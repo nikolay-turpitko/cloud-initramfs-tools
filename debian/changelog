@@ -1,3 +1,10 @@
+cloud-initramfs-tools (0.34ubuntu1) UNRELEASED; urgency=medium
+
+  * cloud-initramfs-rooturl: fix bug resulting in warning message
+    being written when provided a tarball as root.
+
+ -- Scott Moser <smoser@ubuntu.com>  Tue, 10 Jan 2017 20:27:02 -0500
+
 cloud-initramfs-tools (0.33ubuntu1) zesty; urgency=medium
 
   * add cloud-initramfs-rooturl package.
