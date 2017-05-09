@@ -19,4 +19,6 @@ bbox="gzip gunzip"
 [ -d "$DESTDIR/sbin" ] || mkdir -p "$DESTDIR/sbin"
 for need in $bbox; do ln -sf ../bin/busybox "$DESTDIR/sbin/$need"; done
 
+manual_add_modules squashfs
+ 
 # vi: ts=4 noexpandtab
