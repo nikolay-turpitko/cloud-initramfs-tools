@@ -126,7 +126,7 @@ new=$cur
 
 # get the global variables IP and BOOTIF reset with updated values
 {
-	echo "IP='$new'" 
+	echo "IP='$new'"
 	[ -z "$bootif_new" ] || echo "BOOTIF='${bootif_new}'"
 } > /conf/param.conf
 

@@ -94,7 +94,7 @@ else
 	echo "GROWROOT: WARNING: resize failed: $out"
 fi
 
-# Wait for the partition re-read events to complete 
+# Wait for the partition re-read events to complete
 # so that the root partition is available when we try and mount it.
 udevadm settle --timeout ${ROOTDELAY:-30}
 

@@ -27,7 +27,7 @@ while [ ! -e /run/cloud-init/result.json ]; do
    sleep 1
 done
 echo "manual_add_modules squashfs" > /etc/initramfs-tools/hooks/squashfs
-apt-get update -q 
+apt-get update -q
 apt-get install -qy cloud-initramfs-rooturl linux-image-virtual </dev/null
 cd /tmp
 for i in /boot/vmlinu?-*; do

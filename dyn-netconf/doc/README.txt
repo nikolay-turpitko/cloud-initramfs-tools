@@ -10,7 +10,7 @@ described in /usr/share/doc/libklibc/README.ipconfig.gz.
 
 This module translates those files to a interfaces(5) style file
 and writes that to /run/network/dynamic-interfaces.
-Each configured device is set to 'manual'. 
+Each configured device is set to 'manual'.
 It writes 'dns-nameservers' and 'dns-search' entries as supported
 by resolvconf(8).
 

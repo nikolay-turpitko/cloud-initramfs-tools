@@ -20,5 +20,5 @@ bbox="gzip gunzip"
 for need in $bbox; do ln -sf ../bin/busybox "$DESTDIR/sbin/$need"; done
 
 manual_add_modules squashfs
- 
+
 # vi: ts=4 noexpandtab

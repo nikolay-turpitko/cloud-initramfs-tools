@@ -62,7 +62,7 @@ $ df -h /
 Filesystem      Size  Used Avail Use% Mounted on
 overlayroot     497M   59M  438M  12% /
 
-$ egrep "(/media|overlay)" /proc/mounts 
+$ egrep "(/media|overlay)" /proc/mounts
 /dev/loop0 /media/root-ro squashfs ro,relatime 0 0
 tmpfs-root /media/root-rw tmpfs rw,relatime 0 0
 overlayroot / overlayfs rw,relatime,lowerdir=/media/root-ro,upperdir=/media/root-rw//overlay,workdir=/media/root-rw//overlay-workdir 0 0

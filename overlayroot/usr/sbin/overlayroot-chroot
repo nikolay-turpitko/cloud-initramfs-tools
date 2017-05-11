@@ -73,7 +73,7 @@ for d in proc run sys; do
 	if ! mountpoint "${lowerdir}/${d}" >/dev/null; then
 		mount -o bind "/${d}" "${lowerdir}/${d}" || fail "Unable to bind /${d}"
 		mounts="$mounts $lowerdir/$d"
-		trap "clean_exit \"${mounts}\" || true" EXIT HUP INT QUIT TERM   
+		trap "clean_exit \"${mounts}\" || true" EXIT HUP INT QUIT TERM
 	fi
 done
 

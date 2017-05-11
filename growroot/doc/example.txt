@@ -66,17 +66,17 @@ On a Eucalyptus kvm instance, I did the following to demonstrate function.
   read by the kernel and we can make a new filesystem on /dev/sda2 and
   put some things in it.
   $ sudo mkfs.ext3 /dev/sda2 -L HIMOM
-  $ sudo  mount /dev/sda2 /mnt 
+  $ sudo  mount /dev/sda2 /mnt
   $ sudo rsync -a /etc /mnt/
 
-  
+
 - Reboot the system, and the ramdisk should resize the root partition
   However, in order to make filesystem know about its larger size, we
   have to run resize2fs.  That can be done by cloud-init.  So that
   cloud-init does that on first boot, remove the marker that it has
   already done so.
   $ sudo rm /etc/growroot-disabled
-  $ sudo rm /var/lib/cloud/instance/sem/config-resizefs 
+  $ sudo rm /var/lib/cloud/instance/sem/config-resizefs
   $ sudo reboot
 
 - After reboot, the partition table should look like the 'new sfdisk -d'

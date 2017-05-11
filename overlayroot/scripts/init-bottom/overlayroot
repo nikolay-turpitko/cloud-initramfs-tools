@@ -38,7 +38,7 @@ MYTAG="overlayroot"
 TEMP_D="${TMPDIR:-/tmp}/${0##*/}.configs"
 VARIABLES="overlayroot overlayroot_cfgdisk"
 
-# generic settings 
+# generic settings
 # ${ROOT} and ${rootmnt} are predefined by caller of this script. Note that
 # the root fs ${rootmnt} it mounted readonly on the initrams, which fits
 # nicely for our purposes.
@@ -446,7 +446,7 @@ parse_cfg() {
 	#
 	# known issues:
 	# * sourced file could re-define 'echo'
-	# * just fails if a value has a ' in it 
+	# * just fails if a value has a ' in it
 	[ -f "$1" ] || return 0
 	tick="'" sh -c '
 		__tick=$tick
@@ -463,7 +463,7 @@ parse_cfg() {
 		set -e
 		echo "desc=${__tick}${__desc}${__tick}"
 		for var in ${__vars}; do
-			eval val=\${${var}-${__unset__}} || 
+			eval val=\${${var}-${__unset__}} ||
 				{ echo "eval of $var failed"; exit 1; }
 			[ "${val#*${__tick}}" = "${val}" ] || {
 				echo "variable \"$var\" had single tick in it. fail";
@@ -532,7 +532,7 @@ search_fs_driver() {
 	# assumes that name in /proc/filesystems and module name are the same.
 	local m="" driver="" tab='	'
 	for m in "$@"; do
-		grep -q "${tab}$m$" /proc/filesystems && driver="$m" && 
+		grep -q "${tab}$m$" /proc/filesystems && driver="$m" &&
 			{ debug "/proc/filesystems support for '$m'"; break; }
 	done
 	if [ -z "$driver" ]; then
@@ -725,8 +725,8 @@ mount --move "${ROOTMNT}" "${root_ro}" ||
 
 # there is nothing left at ${ROOTMNT} now. So for any error we get we should
 # either do recovery to restore ${ROOTMNT} for drop to a initramfs shell using
-# "panic". Otherwise the boot process is very likely to fail with even more 
-# errors and leave the system in a wired state. 
+# "panic". Otherwise the boot process is very likely to fail with even more
+# errors and leave the system in a wired state.
 
 # mount virtual fs ${ROOTMNT} with rw-fs ${root_rw} on top or ro-fs ${root_ro}.
 debug mount -t "$mount_type" $mount_opts
@@ -754,12 +754,12 @@ fi
 # is already up, these changes also end up on ${root_rw} while ${root_ro}
 # is not touched.
 
-# move mount from ${root_ro} to ${ROOTMNT}${root_ro} 
+# move mount from ${root_ro} to ${ROOTMNT}${root_ro}
 mkdir -p "${ROOTMNT}/${root_ro}"
 mount --move ${root_ro} "${ROOTMNT}${root_ro}" ||
 	fail "failed to move ${root_ro} to ${ROOTMNT}${root_ro}"
 
-# move mount from ${root_rw} to ${ROOTMNT}${root_rw} 
+# move mount from ${root_rw} to ${ROOTMNT}${root_rw}
 [ -d ${ROOTMNT}${root_rw} ] || mkdir -p ${ROOTMNT}${root_rw}
 mount --move "${root_rw}" "${ROOTMNT}${root_rw}" ||
 	fail "failed to move ${root_rw} to ${ROOTMNT}${root_rw}"
@@ -767,17 +767,17 @@ mount --move "${root_rw}" "${ROOTMNT}${root_rw}" ||
 # technically, everything is set up nicely now. Since ${ROOTMNT} had beend
 # mounted read-only on the initfamfs already, ${ROOTMNT}${root_ro} is it,
 # too.  Now we init process could run - but unfortunately, we may have to
-# prepare some more things here. 
+# prepare some more things here.
 # Basically, there are two ways to deal with the read-only root fs. If the
 # system is made aware of this, things can be simplified a lot.  If it is
-# not, things need to be done to our best knowledge. 
+# not, things need to be done to our best knowledge.
 #
 # So we assume here, the system does not really know about our read-only
 # root fs.
 #
 # Let's deal with /etc/fstab first. It usually contains an entry for the
 # root fs, which is no longer valid now. We have to remove it and add our
-# new ${root_ro} entry. 
+# new ${root_ro} entry.
 # Remember we are still on the initramfs root fs here, so we have to work
 # on ${ROOTMNT}/etc/fstab. The original fstab is
 # ${ROOTMNT}${root_ro}/etc/fstab.
@@ -824,5 +824,5 @@ msg="configured root with '$overlayroot' using ${overlayroot_driver} per"
 msg="$msg ${used_desc}"
 log_success "$msg"
 
-exit 0 
+exit 0
 # vi: ts=4 noexpandtab

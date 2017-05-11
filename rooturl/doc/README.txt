@@ -8,7 +8,7 @@ Ie, you might have a root like that found at
 
 An example booting squashfs image can be done like:
 
-  qemu-system-x86_64 -enable-kvm 
+  qemu-system-x86_64 -enable-kvm
      -device virtio-net-pci,netdev=net00 \
      -netdev type=user,id=net00 \
      -m 1G -nographic \

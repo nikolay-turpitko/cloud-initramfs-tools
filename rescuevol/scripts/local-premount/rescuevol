@@ -11,7 +11,7 @@ get_dev_by_label() {
 	_RET=${dev}
 }
 hasvol() {
-	local dev="" mp="" label=${1} myinit="${2}" 
+	local dev="" mp="" label=${1} myinit="${2}"
 	get_dev_by_label "$label" || return 1
 	dev=${_RET}
 
