@@ -1,9 +1,9 @@
-cloud-initramfs-tools (0.37ubuntu1) UNRELEASED; urgency=medium
+cloud-initramfs-tools (0.37ubuntu1) artful; urgency=medium
 
   * Remove unintended files from source upload.
   * remove trailing white space in many files.
 
- -- Scott Moser <smoser@ubuntu.com>  Thu, 11 May 2017 15:38:10 -0400
+ -- Scott Moser <smoser@ubuntu.com>  Thu, 11 May 2017 15:45:18 -0400
 
 cloud-initramfs-tools (0.36ubuntu1) artful; urgency=medium
 
