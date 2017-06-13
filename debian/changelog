@@ -1,3 +1,10 @@
+cloud-initramfs-tools (0.38ubuntu1) UNRELEASED; urgency=medium
+
+  * overlayroot: add 'noauto' to the options for the /media/root-ro 
+    fstab entry (LP: #1666573).
+
+ -- Scott Moser <smoser@ubuntu.com>  Tue, 13 Jun 2017 16:51:28 -0400
+
 cloud-initramfs-tools (0.37ubuntu1) artful; urgency=medium
 
   * Remove unintended files from source upload.
