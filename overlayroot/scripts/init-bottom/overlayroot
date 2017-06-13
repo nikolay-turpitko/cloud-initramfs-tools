@@ -308,18 +308,20 @@ overlayrootify_fstab() {
 	local recurse=${5:-1} swap=${6:-0} fstype=${7:-overlayfs}
 	local hash="#" oline="" ospec="" upper="" dirs="" copy_opts=""
 	local spec file vfstype opts pass freq line ro_line
-	local workdir="" use_orig="" relfile="" needs_workdir=false
+	local workdir="" use_orig="" relfile="" needs_workdir=false noauto=""
 	
 	[ -f "$input" ] || return 1
 
 	needs_workdir && needs_workdir=true || needs_workdir=false
 	while read spec file vfstype opts pass freq; do
+		[ "$file" = "/" ] && noauto="noauto" || noauto=""
 		line="$spec $file $vfstype $opts $pass $freq"
 		case ",$opts," in
 			*,ro,*) ro_opts="$opts";;
 			*) ro_opts="ro,${opts}";;
 		esac
-		ro_line="$spec ${root_ro}$file $vfstype ${ro_opts} $pass $freq"
+		ro_line="$spec ${root_ro}$file $vfstype"
+		ro_line="${ro_line} ${ro_opts}${noauto:+,${noauto}} $pass $freq"
 
 		use_orig=""
 		if [ "${spec#${hash}}" != "$spec" ]; then
@@ -372,13 +374,12 @@ overlayrootify_fstab() {
 			fi
  			oline="${oline} $pass $freq"
 
-			if [ "$recurse" != "0" ]; then
+			if [ "$recurse" != "0" -o "$file" = "/" ]; then
 				echo "$ro_line"
 				echo "$oline"
 				dirs="${dirs} ${upper}"
 			else
 				echo "$line"
-				[ "$file" = "/" ] && dirs="${dirs} ${upper}"
 			fi
 		fi
 	done < "$input"
@@ -794,7 +795,7 @@ cat <<EOF >${ROOTMNT}/etc/fstab
 EOF
 
 [ $? -eq 0 ] || log_fail "failed to modify /etc/fstab (step 1)"
-overlayrootify_fstab ""${ROOTMNT}${root_ro}/etc/fstab"" "$root_ro" \
+overlayrootify_fstab "${ROOTMNT}${root_ro}/etc/fstab" "$root_ro" \
 	"$root_rw" "$dir_prefix" "$recurse" "$swap" "${overlayroot_driver}" \
 	>> "${ROOTMNT}/etc/fstab" ||
 	log_fail "failed to modify /etc/fstab (step 2)"
