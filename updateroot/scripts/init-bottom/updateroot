@@ -66,6 +66,8 @@ debug() {
 	echo "::" "$@"
 }
 
+log_warn() { log_warning_msg "$*"; }
+
 extract_urls() {
 	local target="$1" url="" zopt="" script="" fails="" ret=""
 	shift

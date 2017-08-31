@@ -28,6 +28,7 @@ debug() {
 	[ $v -lt $VERBOSITY ] && return 0
 	echo "::" "$@"
 }
+log_warn() { log_warning_msg "$*"; }
 
 mount_tar() {
 	local target="$1" url=""
