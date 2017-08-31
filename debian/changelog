@@ -1,3 +1,9 @@
+cloud-initramfs-tools (0.39ubuntu1) UNRELEASED; urgency=medium
+
+  * overlayroot, rooturl: fix usage of log_warning_msg. 
+
+ -- Scott Moser <smoser@ubuntu.com>  Thu, 31 Aug 2017 16:11:20 -0400
+
 cloud-initramfs-tools (0.38ubuntu1) artful; urgency=medium
 
   * overlayroot: add 'noauto' to the options for the /media/root-ro 
