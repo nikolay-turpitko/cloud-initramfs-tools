@@ -72,7 +72,7 @@ mount_url() {
 		tar:http*) helper=mount_tar; firsturl="${firsturl#*:}";;
 		squash:http*) helper=mount_squash; firsturl="${firsturl#*:}";;
 		*.tar.??|*.t?z) helper=mount_tar;;
-		*.squash|*.squashfs) helper=mount_squash;;
+		*squash|*squashfs) helper=mount_squash;;
 	esac
 	if [ -z "$helper" ]; then
 		log_warn "no helper identified for '$firsturl'"
