@@ -1,4 +1,4 @@
-cloud-initramfs-tools (0.40ubuntu1) UNRELEASED; urgency=medium
+cloud-initramfs-tools (0.40ubuntu1) bionic; urgency=medium
 
   * rooturl: adjust squashfs url matching to not require '.'.
     Previously it would match <url>*.squashfs or <url>*.squash
@@ -7,7 +7,7 @@ cloud-initramfs-tools (0.40ubuntu1) UNRELEASED; urgency=medium
   * overlayroot: Comment out the read-only line for /.  This hopes to
     avoid systemd confusion and transient ordering cycle. (LP: #1723183)
 
- -- Scott Moser <smoser@ubuntu.com>  Fri, 27 Oct 2017 09:22:15 -0400
+ -- Scott Moser <smoser@ubuntu.com>  Fri, 27 Oct 2017 09:44:49 -0400
 
 cloud-initramfs-tools (0.39ubuntu1) artful; urgency=medium
 
