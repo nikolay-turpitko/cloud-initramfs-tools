@@ -1,3 +1,9 @@
+cloud-initramfs-tools (0.41ubuntu1) UNRELEASED; urgency=medium
+
+  * growroot: copy_exec from wherever they were in path. Closes #852569.
+
+ -- Scott Moser <smoser@ubuntu.com>  Fri, 27 Oct 2017 09:57:24 -0400
+
 cloud-initramfs-tools (0.40ubuntu1) bionic; urgency=medium
 
   * rooturl: adjust squashfs url matching to not require '.'.
