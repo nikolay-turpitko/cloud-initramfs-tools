@@ -1,3 +1,12 @@
+cloud-initramfs-tools (0.40ubuntu1) UNRELEASED; urgency=medium
+
+  * rooturl: adjust squashfs url matching to not require '.'.
+    Previously it would match <url>*.squashfs or <url>*.squash
+    Now it will match <url>*squashfs or <url>*.squash.
+    (LP: #1728048)
+
+ -- Scott Moser <smoser@ubuntu.com>  Fri, 27 Oct 2017 09:22:15 -0400
+
 cloud-initramfs-tools (0.39ubuntu1) artful; urgency=medium
 
   * overlayroot, rooturl: fix usage of log_warning_msg. 
