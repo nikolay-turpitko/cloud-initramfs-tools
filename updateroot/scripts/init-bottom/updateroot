@@ -142,7 +142,7 @@ apply_updateroot() {
 		fi
 		need_remount="true"
 	fi
-	
+
 	extract_urls "$rootmnt" "$@"
 	ret=$?
 
