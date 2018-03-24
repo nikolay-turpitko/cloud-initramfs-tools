@@ -300,7 +300,7 @@ get_workdir() {
 }
 
 overlayrootify_fstab() {
-	# overlayrootify_fstab(input, root_ro, root_rw, dir_prefix, recurse, swap)
+	# overlayrootify_fstab(input, root_ro, root_rw, dir_prefix, recurse, swap, fstype)
 	# read input fstab file, write an overlayroot version to stdout
 	# also returns (_RET) a list of directories that will need to be made
 	local input="$1" root_ro="${2:-/media/root-ro}"
@@ -309,7 +309,17 @@ overlayrootify_fstab() {
 	local hash="#" oline="" ospec="" upper="" dirs="" copy_opts=""
 	local spec file vfstype opts pass freq line ro_line
 	local workdir="" use_orig="" relfile="" needs_workdir=false noauto=""
-	
+
+	local recurse_grep_opt
+	case "$recurse" in
+		not:*)
+			recurse_grep_opt="-v"
+			recurse="${recurse#not:}"
+			;;
+		*)
+			;;
+	esac
+
 	[ -f "$input" ] || return 1
 
 	needs_workdir && needs_workdir=true || needs_workdir=false
@@ -373,13 +383,15 @@ overlayrootify_fstab() {
 			fi
  			oline="${oline} $pass $freq"
 
-			if [ "$recurse" != "0" -o "$file" = "/" ]; then
-				if [ "$file" = "/" ]; then
-					# this can confuse systemd (LP: #1723183)
-					echo "#$ro_line"
-				else
-					echo "$ro_line"
-				fi
+			if [ "$file" = "/" ]; then
+				# this can confuse systemd (LP: #1723183)
+				echo "#$ro_line"
+				echo "$oline"
+				dirs="${dirs} ${upper}"
+			elif [ "$recurse" == "0" ]; then
+				echo "$line"
+			elif [ "$recurse" = "1" ] || { echo "$file" | grep $recurse_grep_opt -qE "$recurse"; }; then
+				echo "$ro_line"
 				echo "$oline"
 				dirs="${dirs} ${upper}"
 			else
@@ -670,8 +682,6 @@ debug "device=$device mode=$mode driver=${overlayroot_driver}"
 
 [ "$swap" = "0" -o "$swap" = "1" ] ||
 	fail "invalid setting for swap: $swap. must be '0' or '1'"
-[ "$recurse" = "0" -o "$recurse" = "1" ] ||
-	fail "invalid setting for recurse: $recurse. must be '0' or '1'"
 
 log_warn "configuring overlayroot with driver=${overlayroot_driver} mode=$mode opts='$opts' per $used_desc"
 
