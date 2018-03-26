@@ -1,3 +1,21 @@
+This is a custom version of Ubuntu's package. It contains my fix for
+the issue https://bugs.launchpad.net/ubuntu/+source/cloud-initramfs-tools/+bug/1758389.
+Namely, I extended option "recurse" of original "overlayroot" package
+to allow list or exclude filesystems with regular expression.
+This allows to protect / (root), /boot and /var partitions but leave
+/home persistable. It also allows to exclude cdrom from the list of
+filesystems handled by the package, and thus provides a workaround
+for a failure during the boot with option "recurse=1", "cdrom" entry
+in the /etc/fstab and without cdrom attached (I had this issue in
+VirtualBox tests).
+
+Because issue have had no attention from the maintainers yet, and
+there is no guarantee when (if ever) my patch made into Ubuntu repo,
+I'm going to use my own fork ot the package meanwhile.
+
+Original README below.
+---------------------------------------------------------------------
+
 This source repository builds packages that work with initramfs-tools
 to add function to an initramfs that is likely cloud specific.
 
