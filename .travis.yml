@@ -19,4 +19,3 @@ deploy:
   on:
     repo: nikolay-turpitko/cloud-initramfs-tools
     branch: debian/stretch
-    tags: true
