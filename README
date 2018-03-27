@@ -15,7 +15,7 @@ Because issue have had no attention from the maintainers yet, and
 there is no guarantee when (if ever) my patch made into Ubuntu repo,
 I'm going to use my own fork ot the package meanwhile.
 
-Original README below.
+Original README is below.
 ---------------------------------------------------------------------
 
 This source repository builds packages that work with initramfs-tools
