@@ -13,9 +13,9 @@ deploy:
     overwrite: true
     file_glob: true
     file:
-        - "/build/overlayroot_*.*"
-        - "/build/*.changes"
-        - "/build/*.buildinfo"
+        - "../overlayroot_*.*"
+        - "../*.changes"
+        - "../*.buildinfo"
     on:
         repo: nikolay-turpitko/cloud-initramfs-tools
         branch: debian/stretch
