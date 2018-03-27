@@ -4,7 +4,6 @@ services:
     - docker
 script:
     - wget -O- http://travis.debian.net/script.sh | sh -
-if: tag IS blank
 deploy:
     provider: releases
     api_key:
