@@ -1,21 +1,21 @@
 sudo: required
 language: generic
 services:
-- docker
+    - docker
 script:
-- wget -O- http://travis.debian.net/script.sh | sh -
+    - wget -O- http://travis.debian.net/script.sh | sh -
 if: tag IS blank
 deploy:
-  provider: releases
-  api_key:
-    secure: WTvsvICJHGmcohBjD6npPfCr+ZzjpaGq3WojkJHpjrm57pfcyuxL2spSVkR3nMtIRZI4UKdT4aOHjA9qKRRA+btTvylzOj3H+otKjVabFUfEPwq2aBmvKjT0p+9vzI43DDyYrEjz++Tn4IHUiuv+0d+8t3SQsTkzngcA+2FSNaYf6HltnfqfFuY1qXedS6KYQPZQYKJZlPnuPeZu96lFxEldQZM9mqtvD6xRuQO7QqUaA8CGnIuNr4zSmQ6mkoFakF1hoYlMIZXUN+pgSx+IPscM20Lj/rzbP93q+fNmoy03crrY0GcW4pGTUf47+/W+6sX7hbvtg5LBA6aJsN8xcENwRqFIxwe386Z1MlCiqAqEw5JTp9qk2ydUlXgW3nhjeo0njqXaUccJAemtt8IWBX1jUdpCfJ61bA89XDAKWpMt8QN0Dpk7rl5lZns1zDNCS+aheblArfNXld3hBSz5+CSgtj4qcsqEDRS5Sz/nSGc1WT9kCUX1bqy+dhuTalvPMcUc+A9YFoJJ/ZaJzRAyZRzK098Z5YKtZRmtVQ3tYwX5Y9IRylVjk600CIKUPNgm2vpS+tMCima64Hu/92XqVOkWnTOnG9hJlipIAPOx2v5xCEMiIeDeNfyqk6V4x/yVt64+hLohx5LWZ1NSzDMm2zEcFZqbUdRi344OxRPZQi0=
-  skip_cleanup: true
-  overwrite: true
-  file_glob: true
-  file:
-      - overlayroot_*.*
-      - *.changes
-      - *.buildinfo
-  on:
-    repo: nikolay-turpitko/cloud-initramfs-tools
-    branch: debian/stretch
+    provider: releases
+    api_key:
+        secure: WTvsvICJHGmcohBjD6npPfCr+ZzjpaGq3WojkJHpjrm57pfcyuxL2spSVkR3nMtIRZI4UKdT4aOHjA9qKRRA+btTvylzOj3H+otKjVabFUfEPwq2aBmvKjT0p+9vzI43DDyYrEjz++Tn4IHUiuv+0d+8t3SQsTkzngcA+2FSNaYf6HltnfqfFuY1qXedS6KYQPZQYKJZlPnuPeZu96lFxEldQZM9mqtvD6xRuQO7QqUaA8CGnIuNr4zSmQ6mkoFakF1hoYlMIZXUN+pgSx+IPscM20Lj/rzbP93q+fNmoy03crrY0GcW4pGTUf47+/W+6sX7hbvtg5LBA6aJsN8xcENwRqFIxwe386Z1MlCiqAqEw5JTp9qk2ydUlXgW3nhjeo0njqXaUccJAemtt8IWBX1jUdpCfJ61bA89XDAKWpMt8QN0Dpk7rl5lZns1zDNCS+aheblArfNXld3hBSz5+CSgtj4qcsqEDRS5Sz/nSGc1WT9kCUX1bqy+dhuTalvPMcUc+A9YFoJJ/ZaJzRAyZRzK098Z5YKtZRmtVQ3tYwX5Y9IRylVjk600CIKUPNgm2vpS+tMCima64Hu/92XqVOkWnTOnG9hJlipIAPOx2v5xCEMiIeDeNfyqk6V4x/yVt64+hLohx5LWZ1NSzDMm2zEcFZqbUdRi344OxRPZQi0=
+    skip_cleanup: true
+    overwrite: true
+    file_glob: true
+    file:
+        - "overlayroot_*.*"
+        - "*.changes"
+        - "*.buildinfo"
+    on:
+        repo: nikolay-turpitko/cloud-initramfs-tools
+        branch: debian/stretch
