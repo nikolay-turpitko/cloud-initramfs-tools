@@ -1,3 +1,5 @@
+https://travis-ci.org/nikolay-turpitko/cloud-initramfs-tools.svg?branch=debian/stretch
+
 This is a custom version of Ubuntu's package. It contains my fix for
 the issue https://bugs.launchpad.net/ubuntu/+source/cloud-initramfs-tools/+bug/1758389.
 Namely, I extended option "recurse" of original "overlayroot" package
